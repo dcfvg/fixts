@@ -33,6 +33,14 @@
   ],
   "author": "",
   "license": "GPL-3.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dcfvg/fixts.git"
+  },
+  "bugs": {
+    "url": "https://github.com/dcfvg/fixts/issues"
+  },
+  "homepage": "https://github.com/dcfvg/fixts#readme",
   "engines": {
     "node": ">=14.0.0"
   },
