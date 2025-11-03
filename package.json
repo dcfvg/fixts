@@ -1,0 +1,45 @@
+{
+  "name": "fixts",
+  "version": "1.0.0",
+  "description": "CLI tool to normalize filenames and folders with timestamps to a consistent format",
+  "main": "index.js",
+  "type": "module",
+  "bin": {
+    "fixts": "./cli.js"
+  },
+  "scripts": {
+    "test": "node --test test/**/*.test.js",
+    "test:watch": "node --test --watch test/**/*.test.js",
+    "test:integration": "cd test/integration && ./run-all.sh",
+    "test:local": "node test/local-sample/analyze-all-documents.js",
+    "test:local:inspect": "node test/local-sample/inspect-transformations.js",
+    "test:local:false-positives": "node test/local-sample/test-false-positives.js",
+    "test:local:generate": "node test/local-sample/generate-sample.js",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "verify": "npm run lint; LINT_CODE=$?; npm run test; TEST_CODE=$?; npm run test:integration; INT_CODE=$?; echo ''; echo '===== VERIFICATION SUMMARY ====='; [ $LINT_CODE -eq 0 ] && echo '✅ Lint: PASS' || echo '❌ Lint: FAIL'; [ $TEST_CODE -eq 0 ] && echo '✅ Unit Tests: PASS' || echo '❌ Unit Tests: FAIL'; [ $INT_CODE -eq 0 ] && echo '✅ Integration Tests: PASS' || echo '❌ Integration Tests: FAIL'; exit $(($LINT_CODE + $TEST_CODE + $INT_CODE))",
+    "verify:quick": "npm run lint && npm run test",
+    "docs": "jsdoc -c jsdoc.json",
+    "docs:serve": "jsdoc -c jsdoc.json && open docs/api/index.html",
+    "sample": "node cli.js ./sample --dry-run"
+  },
+  "keywords": [
+    "cli",
+    "date",
+    "timestamp",
+    "rename",
+    "format",
+    "filename"
+  ],
+  "author": "",
+  "license": "GPL-3.0-or-later",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.0",
+    "docdash": "^2.0.2",
+    "eslint": "^9.39.0",
+    "jsdoc": "^4.0.5"
+  }
+}
