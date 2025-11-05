@@ -24,10 +24,11 @@ function parseArgs(args) {
     help: false,
     timeShift: null, // Time shift in milliseconds
     ambiguityResolution: {}, // Preset ambiguity resolutions
-    includeExt: [], // Include only these extensions
-    excludeExt: [], // Exclude these extensions
+    includeExt: [], // Include only these extensions/directories
+    excludeExt: [], // Exclude these extensions/directories
     noRevert: false, // Skip revert script generation
     copyFlat: false, // Flatten directory structure in copy mode
+    depth: Infinity, // Recursion depth (Infinity = unlimited, 1 = root only)
   };
 
   for (let i = 2; i < args.length; i++) {
@@ -39,7 +40,7 @@ function parseArgs(args) {
       options.wizard = true;
     } else if (arg === '--no-revert') {
       options.noRevert = true;
-    } else if (arg === '--dry-run' || arg === '-d') {
+    } else if (arg === '--dry-run') {
       options.dryRun = true;
     } else if (arg === '--execute' || arg === '-e') {
       options.dryRun = false;
@@ -107,14 +108,28 @@ function parseArgs(args) {
         }
       }
     } else if (arg === '--include-ext' || arg === '-i') {
-      // Collect all following non-flag arguments as extensions
+      // Collect all following non-flag arguments as extensions/directories
       while (i + 1 < args.length && !args[i + 1].startsWith('-')) {
-        options.includeExt.push(args[++i].toLowerCase().replace(/^\./, ''));
+        const value = args[++i];
+        // If value has a dot, it's an extension (remove dot); otherwise it's a directory name
+        options.includeExt.push(value.startsWith('.') ? value.slice(1).toLowerCase() : value);
       }
     } else if (arg === '--exclude-ext' || arg === '-x') {
-      // Collect all following non-flag arguments as extensions
+      // Collect all following non-flag arguments as extensions/directories
       while (i + 1 < args.length && !args[i + 1].startsWith('-')) {
-        options.excludeExt.push(args[++i].toLowerCase().replace(/^\./, ''));
+        const value = args[++i];
+        // If value has a dot, it's an extension (remove dot); otherwise it's a directory name
+        options.excludeExt.push(value.startsWith('.') ? value.slice(1).toLowerCase() : value);
+      }
+    } else if (arg === '--depth' || arg === '-d') {
+      if (i + 1 < args.length) {
+        const depthValue = parseInt(args[++i], 10);
+        if (isNaN(depthValue) || depthValue < 1) {
+          console.error(`❌ Invalid depth value: ${args[i]}`);
+          console.error('   Depth must be a positive integer (1 = root only, 2 = root + 1 level, etc.)');
+          process.exit(1);
+        }
+        options.depth = depthValue;
       }
     } else if (!options.path) {
       options.path = arg;
@@ -136,7 +151,7 @@ Arguments:
   <path>                Path to file or directory to process
 
 Options:
-  -d, --dry-run        Show changes without applying them (default)
+  --dry-run            Show changes without applying them (default)
   -e, --execute        Execute the renaming (requires confirmation)
   -c, --copy           Copy files/folders to '_c' directory instead of renaming
   --copy-flat          Flatten directory structure when copying (all files in _c root)
@@ -180,14 +195,24 @@ Options:
                          --resolution eu --resolution 2000s
                          --resolution us --resolution 1900s
   -t, --table          Show detailed table format with metadata sources
-  -i, --include-ext <ext...>  Include only files with these extensions
+  -i, --include-ext <items...>  Include only specified items (extensions and/or 'dir')
+                       Use 'dir' keyword to include directories in processing
                        Examples:
-                         -i jpg png jpeg    Include only image files
-                         -i mp4 mov avi     Include only video files
-  -x, --exclude-ext <ext...>  Exclude files with these extensions
+                         -i jpg png jpeg    Include only .jpg, .png, .jpeg files
+                         -i dir             Include only directories (no files)
+                         -i jpg dir pdf     Include .jpg, .pdf files AND directories
+  -x, --exclude-ext <items...>  Exclude specified items (extensions and/or 'dir')
+                       Use 'dir' keyword to exclude all directories
                        Examples:
-                         -x pdf docx        Exclude documents
-                         -x txt md          Exclude text files
+                         -x pdf docx        Exclude .pdf and .docx files
+                         -x dir             Exclude all directories (files only)
+                         -x mp3 dir txt     Exclude .mp3, .txt files AND directories
+                       Note: Exclusion takes priority over inclusion
+  -d, --depth <n>      Maximum recursion depth (default: unlimited)
+                       Examples:
+                         -d 1               Process only root level (no subdirectories)
+                         -d 2               Process root + 1 level of subdirectories
+                         -d 3               Process root + 2 levels of subdirectories
   -w, --wizard         Enable wizard mode with prompts for ambiguities
   --no-revert          Skip revert script generation (faster for large batches)
   -h, --help           Show this help message
@@ -210,10 +235,14 @@ Examples:
   fixts ./file.pdf --format "yyyy-mm-dd" --execute
   fixts . --format "dd-mm-yyyy hh.MM.ss"
   fixts ./mixed-files --wizard
-  fixts ./photos --shift +2h --execute     # Correct camera clock error
-  fixts ./files --shift -1d --execute      # Remove 1 day from all dates
-  fixts ./images -i jpg png jpeg --execute  # Process only image files
-  fixts ./docs -x pdf docx --execute       # Exclude documents
+  fixts ./photos --shift +2h --execute        # Correct camera clock error
+  fixts ./files --shift -1d --execute         # Remove 1 day from all dates
+  fixts ./images -i jpg png jpeg --execute    # Process only image files
+  fixts ./docs -x pdf docx --execute          # Exclude documents
+  fixts ./project -x dir --execute            # Process files only (no directories)
+  fixts ./folders -i dir --execute            # Process directories only (no files)
+  fixts ./mixed -i jpg dir pdf --execute      # Process .jpg, .pdf AND directories
+  fixts ./deep-folder -d 2 --execute          # Process only 2 levels deep
 
 Time Shift Use Cases:
   - Camera clock was wrong (timezone, wrong date set)
@@ -512,6 +541,9 @@ async function interactiveWorkflow(targetPath, options) {
       timeShiftMs: options.timeShift,
       ambiguityResolution: options.ambiguityResolution,
       interactive: true, // Interactive workflow always uses interactive mode
+      includeExt: options.includeExt,
+      excludeExt: options.excludeExt,
+      depth: options.depth,
     });
 
     const successful = result.results.filter((r) => !r.error).length;
@@ -611,6 +643,7 @@ async function main() {
       interactive: options.wizard,
       includeExt: options.includeExt,
       excludeExt: options.excludeExt,
+      depth: options.depth,
       noRevert: options.noRevert,
     });
 
@@ -856,6 +889,7 @@ async function main() {
       interactive: options.wizard,
       includeExt: options.includeExt,
       excludeExt: options.excludeExt,
+      depth: options.depth,
       noRevert: options.noRevert,
     });
 

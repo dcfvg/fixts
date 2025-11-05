@@ -104,6 +104,15 @@ fixts ./downloads -x pdf docx txt --execute
 
 # Combine filters (exclude takes priority)
 fixts ./files -i jpg png -x thumbnail --execute
+
+# Exclude directories by name
+fixts ./project -X node_modules .git temp --execute
+
+# Process only root level (no subdirectories)
+fixts ./photos -D 1 --execute
+
+# Process root + 1 level of subdirectories
+fixts ./documents -D 2 --execute
 ```
 
 ### Metadata extraction
@@ -185,7 +194,9 @@ And many more! See [full format list](./DOCUMENTATION.md#supported-formats).
 | `--shift` | | Time shift (e.g., `+2h`, `-1d3h30m`) |
 | `--use-metadata` | `-m` | Extract dates from metadata |
 | `--include-ext` | `-i` | Include only these extensions |
-| `--exclude-ext` | `-x` | Exclude these extensions |
+| `--exclude-ext` | `-x` | Exclude these extensions (priority over include) |
+| `--exclude-dir` | `-X` | Exclude directories by name |
+| `--depth` | `-D` | Max recursion depth (default: unlimited) |
 | `--resolution` | | Resolve ambiguities (`dd-mm-yyyy`, `mm-dd-yyyy`, `2000s`, `1900s`) |
 | `--no-revert` | | Skip revert script generation (faster for large batches) |
 
@@ -256,6 +267,9 @@ fixts ~/Downloads -i pdf --execute
 
 # Exclude temporary files
 fixts ~/Downloads -x tmp temp --execute
+
+# Exclude system folders
+fixts ~/Downloads -X .Spotlight-V100 .Trashes --execute
 ```
 
 ### Batch processing
@@ -263,6 +277,12 @@ fixts ~/Downloads -x tmp temp --execute
 ```bash
 # Process entire directory tree
 fixts ~/Documents --execute
+
+# Process only root level (no subdirectories)
+fixts ~/Documents -D 1 --execute
+
+# Process with limited depth
+fixts ~/Documents -D 3 --execute
 
 # With custom format
 fixts ~/Archive --format "yyyy-mm-dd" --execute

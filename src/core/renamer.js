@@ -385,15 +385,26 @@ function processItemWithCopy(path, timedDir, basePath, options) {
  * @param {string} dirPath - Directory path
  * @param {string} format - Target format
  * @param {Object} parsingOptions - Options for timestamp parsing
- * @param {Array<string>} includeExt - Extensions to include (empty = all)
- * @param {Array<string>} excludeExt - Extensions to exclude
+ * @param {Array<string>} includeExt - Extensions/types to include (use 'dir' keyword for directories)
+ * @param {Array<string>} excludeExt - Extensions/types to exclude (use 'dir' keyword for directories)
+ * @param {Array<string>} excludeDir - DEPRECATED: Use excludeExt with 'dir' keyword instead
+ * @param {number} maxDepth - Maximum recursion depth (Infinity = unlimited)
+ * @param {number} currentDepth - Current recursion depth (internal)
  * @returns {Object} - { toRename: Array<{path, newName}>, alreadyFormatted: Array<string>, withoutTimestamp: Array<string> }
  */
-function findItemsWithTimestamps(dirPath, format = 'yyyy-mm-dd hh.MM.ss', parsingOptions = {}, includeExt = [], excludeExt = []) {
+function findItemsWithTimestamps(dirPath, format = 'yyyy-mm-dd hh.MM.ss', parsingOptions = {}, includeExt = [], excludeExt = [], excludeDir = [], maxDepth = Infinity, currentDepth = 1) {
   const toRename = [];
   const alreadyFormatted = [];
   const withoutTimestamp = [];
   const items = readdirSync(dirPath);
+
+  // Check if 'dir' keyword is present in filters
+  const includeDirectories = includeExt.includes('dir');
+  const excludeDirectories = excludeExt.includes('dir');
+
+  // Filter out 'dir' keyword to get actual extensions
+  const includeExtFiltered = includeExt.filter(ext => ext !== 'dir');
+  const excludeExtFiltered = excludeExt.filter(ext => ext !== 'dir');
 
   items.forEach((item) => {
     // Skip system files
@@ -404,19 +415,50 @@ function findItemsWithTimestamps(dirPath, format = 'yyyy-mm-dd hh.MM.ss', parsin
     const fullPath = join(dirPath, item);
     const stats = statSync(fullPath);
 
-    // Apply extension filters for files
+    // Apply filters for files
     if (stats.isFile()) {
       const ext = item.split('.').pop().toLowerCase();
 
-      // Check exclude list first
-      if (excludeExt.length > 0 && excludeExt.includes(ext)) {
+      // Check exclude list first (extensions)
+      if (excludeExtFiltered.length > 0 && excludeExtFiltered.includes(ext)) {
         return;
       }
 
-      // Check include list (if specified)
-      if (includeExt.length > 0 && !includeExt.includes(ext)) {
+      // Check include list (if specified, extensions only)
+      // If includeExt has 'dir' only (no extensions), skip all files
+      if (includeExt.length > 0) {
+        if (includeExtFiltered.length === 0 && includeDirectories) {
+          // Only 'dir' is included, skip files
+          return;
+        } else if (includeExtFiltered.length > 0 && !includeExtFiltered.includes(ext)) {
+          // Has extensions filter, but this file doesn't match
+          return;
+        }
+      }
+    }
+
+    // Apply filters for directories
+    if (stats.isDirectory()) {
+      // Skip '_c' folder used for copy mode
+      if (item === '_c') {
         return;
       }
+
+      // If 'dir' is in exclude list, skip all directories
+      if (excludeDirectories) {
+        return;
+      }
+
+      // Check if directory name is in exclude list (legacy support)
+      if (excludeDir.length > 0 && excludeDir.includes(item)) {
+        return;
+      }
+
+      // If includeExt explicitly asks only for directories (i.e. only 'dir' keyword),
+      // keep directories; otherwise always traverse directories so files inside
+      // subdirectories can be matched against extension filters.
+      // (Previously directories were skipped when includeExt was present, which
+      // prevented recursive searching for matching files.)
     }
 
     // Check if name contains a timestamp
@@ -433,9 +475,9 @@ function findItemsWithTimestamps(dirPath, format = 'yyyy-mm-dd hh.MM.ss', parsin
       withoutTimestamp.push(fullPath);
     }
 
-    // Recursively search directories (except '_c' folder used for copy mode)
-    if (stats.isDirectory() && item !== '_c') {
-      const subResults = findItemsWithTimestamps(fullPath, format, parsingOptions, includeExt, excludeExt);
+    // Recursively search directories if we haven't reached max depth
+    if (stats.isDirectory() && currentDepth < maxDepth) {
+      const subResults = findItemsWithTimestamps(fullPath, format, parsingOptions, includeExt, excludeExt, excludeDir, maxDepth, currentDepth + 1);
       toRename.push(...subResults.toRename);
       alreadyFormatted.push(...subResults.alreadyFormatted);
       withoutTimestamp.push(...subResults.withoutTimestamp);
@@ -450,15 +492,17 @@ function findItemsWithTimestamps(dirPath, format = 'yyyy-mm-dd hh.MM.ss', parsin
  * @param {string} targetPath - Path to analyze
  * @param {string} format - Target format
  * @param {Object} parsingOptions - Options for timestamp parsing
- * @param {Array<string>} includeExt - Extensions to include
- * @param {Array<string>} excludeExt - Extensions to exclude
+ * @param {Array<string>} includeExt - Extensions/types to include (use 'dir' keyword for directories)
+ * @param {Array<string>} excludeExt - Extensions/types to exclude (use 'dir' keyword for directories)
+ * @param {Array<string>} excludeDir - DEPRECATED: Use excludeExt with 'dir' keyword instead
+ * @param {number} maxDepth - Maximum recursion depth
  * @returns {Object} - { toRename: Array<{path, newName, oldName}>, alreadyFormatted: Array<string>, withoutTimestamp: Array<string> }
  */
-function discoverItems(targetPath, format = 'yyyy-mm-dd hh.MM.ss', parsingOptions = {}, includeExt = [], excludeExt = []) {
+function discoverItems(targetPath, format = 'yyyy-mm-dd hh.MM.ss', parsingOptions = {}, includeExt = [], excludeExt = [], excludeDir = [], maxDepth = Infinity) {
   const stats = statSync(targetPath);
 
   if (stats.isDirectory()) {
-    return findItemsWithTimestamps(targetPath, format, parsingOptions, includeExt, excludeExt);
+    return findItemsWithTimestamps(targetPath, format, parsingOptions, includeExt, excludeExt, excludeDir, maxDepth);
   }
 
   // Single file - check extension filter
@@ -684,6 +728,10 @@ function generateAmbiguityMessage(ambiguity) {
  * @param {boolean} [options.dryRun=true] - If true, simulate without actual changes
  * @param {boolean} [options.execute=false] - If true, perform actual operations
  * @param {boolean} [options.interactive=false] - If true, prompt for ambiguities
+ * @param {Array<string>} [options.includeExt=[]] - Extensions to include
+ * @param {Array<string>} [options.excludeExt=[]] - Extensions to exclude
+ * @param {Array<string>} [options.excludeDir=[]] - Directory names to exclude
+ * @param {number} [options.depth=Infinity] - Maximum recursion depth
  * @returns {Promise<Object>} - Object with { results: Array<Object>, alreadyFormatted: number, noTimestamp: boolean, withoutTimestamp: number, skippedAmbiguous: Array<Object> }
  */
 export async function rename(targetPath, options = {}) {
@@ -698,6 +746,8 @@ export async function rename(targetPath, options = {}) {
     interactive = false,
     includeExt = [],
     excludeExt = [],
+    excludeDir = [],
+    depth = Infinity,
     noRevert = false,
   } = options;
 
@@ -710,7 +760,7 @@ export async function rename(targetPath, options = {}) {
   }
 
   // Step 1: Discover all items to process (with cached newName for performance)
-  const discovered = discoverItems(targetPath, format, parsingOptions, includeExt, excludeExt);
+  const discovered = discoverItems(targetPath, format, parsingOptions, includeExt, excludeExt, excludeDir, depth);
   const items = discovered.toRename;
   const alreadyFormattedCount = discovered.alreadyFormatted.length;
   const withoutTimestampCount = discovered.withoutTimestamp.length;
