@@ -49,9 +49,9 @@ export function parseTimeShift(shiftStr) {
   const minutes = parseInt(minutesStr || '0', 10);
   const seconds = parseInt(secondsStr || '0', 10);
 
-  // Sanity check: limit to ±365 days to prevent typos
+  // Sanity check: limit to ±10 years (3650 days) to prevent extreme typos
   const totalDays = days + (hours / 24) + (minutes / 1440) + (seconds / 86400);
-  if (Math.abs(totalDays) > 365) {
+  if (Math.abs(totalDays) > 3650) {
     return null;
   }
 

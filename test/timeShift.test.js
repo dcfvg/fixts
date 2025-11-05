@@ -86,14 +86,16 @@ describe('parseTimeShift', () => {
       assert.equal(parseTimeShift('+365d'), 31536000000); // 1 year
       assert.equal(parseTimeShift('+100d'), 8640000000); // 100 days
       assert.equal(parseTimeShift('-365d'), -31536000000); // -1 year
+      assert.equal(parseTimeShift('-600d'), -51840000000); // -600 days (~1.6 years)
+      assert.equal(parseTimeShift('+3650d'), 315360000000); // 10 years
     });
   });
 
   describe('Invalid inputs', () => {
-    it('should reject values beyond 365 days', () => {
-      assert.equal(parseTimeShift('+366d'), null);
-      assert.equal(parseTimeShift('+400d'), null);
-      assert.equal(parseTimeShift('-366d'), null);
+    it('should reject values beyond 10 years (3650 days)', () => {
+      assert.equal(parseTimeShift('+3651d'), null);
+      assert.equal(parseTimeShift('+4000d'), null);
+      assert.equal(parseTimeShift('-3651d'), null);
     });
 
     it('should reject empty or invalid strings', () => {
