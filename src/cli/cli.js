@@ -1,5 +1,11 @@
 #!/usr/bin/env node
 
+/**
+ * NOTE: This CLI entry point is Node.js-specific by design.
+ * Phase 3 architecture: Core logic in ../core/ is execution-agnostic where possible.
+ * FileSystemAdapter pattern available in ../adapters/ for future platform extensions.
+ */
+
 import { resolve, basename } from 'path';
 import { existsSync, statSync, readdirSync } from 'fs';
 import { join } from 'path';

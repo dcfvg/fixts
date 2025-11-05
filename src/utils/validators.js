@@ -1,6 +1,9 @@
 /**
  * Input validation utilities
  * Provides clear, user-friendly error messages for invalid inputs
+ *
+ * NOTE: This file is Node.js-specific for CLI validation using fs.existsSync/statSync.
+ * Core validation logic (formats, extensions) could be separated for browser use.
  */
 
 import { existsSync, statSync } from 'fs';

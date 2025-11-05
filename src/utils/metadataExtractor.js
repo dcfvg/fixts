@@ -12,6 +12,17 @@ import {
   parseAIFFTimestamp,
 } from './metadataParsers.js';
 
+/**
+ * NOTE: This file is intentionally Node.js-specific for CLI usage.
+ * It handles filesystem I/O and external tool integration (exiftool, mdls).
+ *
+ * Phase 3 architecture: The pure parsing logic (parseEXIFSegment, parseID3v2Timestamp, etc.)
+ * is separated in metadataParsers.js and can be used in browser environments.
+ *
+ * For webapp usage: Use metadataParsers.js directly with File API / ArrayBuffer.
+ * See fixts-webapp/src/lib/exif.ts for browser implementation example.
+ */
+
 const execAsync = promisify(exec);
 
 // Cache for external tool availability (checked once per session)

@@ -2,6 +2,11 @@ import { statSync } from 'fs';
 import { detectAmbiguity } from './ambiguityDetector.js';
 
 /**
+ * NOTE: This file uses statSync for file metadata, Node.js-specific.
+ * Core ambiguity resolution logic could be separated for browser use if needed.
+ */
+
+/**
  * Calculate confidence score for a date interpretation based on file mtime
  * @param {Date} interpretedDate - The interpreted date
  * @param {Date} mtime - File modification time

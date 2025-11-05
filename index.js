@@ -7,7 +7,6 @@ export {
   parseTimestamp,
   parseTimestampFromFilename,
   parseTimestampFromName,
-  detectPatternInFilename,
   getDetectionInfo,
   DETECTION_METHOD,
 } from './src/utils/timestampParser.js';

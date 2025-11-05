@@ -6,6 +6,13 @@ import { extractDatesFromFiles, formatMetadataDate } from '../utils/metadataExtr
 import { batchAnalyzeAmbiguousFiles } from '../utils/smartAmbiguityResolver.js';
 
 /**
+ * NOTE: This file currently uses Node.js fs and path modules directly.
+ * Phase 3 migration: The FileSystemAdapter pattern is available in ../adapters/
+ * for future refactoring to make this code execution-context agnostic.
+ * Current status: Working with Node.js, fully functional for CLI usage.
+ */
+
+/**
  * Get path depth (number of directory levels) in a cross-platform way
  * @param {string} itemPath - Path to analyze
  * @returns {number} - Number of path segments
