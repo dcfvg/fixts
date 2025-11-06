@@ -6,7 +6,7 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 FIXTURE_DIR="$SCRIPT_DIR/../fixtures"
-TEST_DIR="/tmp/dating-test-basic-$$"
+TEST_DIR="/tmp/fixts-test-basic-$$"
 
 # Colors
 GREEN='\033[0;32m'
@@ -39,8 +39,8 @@ echo ""
 
 # Test 1.1: Dry run
 echo "📋 Test 1.1: Dry run (preview)"
-echo "   Command: dating . -d --resolution dd-mm-yyyy --resolution 2000s"
-OUTPUT=$(dating . -d --resolution dd-mm-yyyy --resolution 2000s 2>&1)
+echo "   Command: fixts . -d --resolution dd-mm-yyyy --resolution 2000s"
+OUTPUT=$(fixts . -d --resolution dd-mm-yyyy --resolution 2000s 2>&1)
 
 if echo "$OUTPUT" | grep -q "Found.*item(s) to rename"; then
     echo -e "   ${GREEN}✓ Dry run executed${NC}"
@@ -60,8 +60,8 @@ fi
 # Test 1.2: Execute rename
 echo ""
 echo "🔨 Test 1.2: Execute rename"
-echo "   Command: dating . -e --resolution dd-mm-yyyy --resolution 2000s"
-OUTPUT=$(dating . -e --resolution dd-mm-yyyy --resolution 2000s 2>&1)
+echo "   Command: fixts . -e --resolution dd-mm-yyyy --resolution 2000s"
+OUTPUT=$(fixts . -e --resolution dd-mm-yyyy --resolution 2000s 2>&1)
 
 if echo "$OUTPUT" | grep -q "Successfully renamed"; then
     COUNT=$(echo "$OUTPUT" | grep -oE 'Successfully renamed [0-9]+' | grep -oE '[0-9]+')

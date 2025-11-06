@@ -1,5 +1,5 @@
 /**
- * Global constants for the dating utility
+ * Global constants for the fixts utility
  */
 
 /**

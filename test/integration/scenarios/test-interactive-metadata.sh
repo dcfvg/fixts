@@ -5,7 +5,7 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-TEST_DIR="/tmp/dating-test-interactive-metadata-$$"
+TEST_DIR="/tmp/fixts-test-interactive-metadata-$$"
 
 GREEN='\033[0;32m'
 RED='\033[0;31m'
@@ -68,7 +68,7 @@ echo -e "${BLUE}📋 Test 2: Non-interactive with metadata (dry-run)${NC}"
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 
-OUTPUT=$(dating . -m earliest -d 2>&1)
+OUTPUT=$(fixts . -m earliest -d 2>&1)
 
 # Check metadata extraction
 if echo "$OUTPUT" | grep -q "Scanning file metadata\|Processing.*file(s) without timestamps"; then
@@ -114,7 +114,7 @@ echo -e "${BLUE}🔨 Test 3: Execute rename with metadata${NC}"
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 
-OUTPUT=$(dating . -m earliest -e 2>&1)
+OUTPUT=$(fixts . -m earliest -e 2>&1)
 
 # Check execution
 if echo "$OUTPUT" | grep -q "Successfully renamed"; then
@@ -169,7 +169,7 @@ touch "custom-format-test.jpg"
 touch -t 202301151430 "custom-format-test.jpg"
 
 # Use custom format: dd-mm-yyyy
-OUTPUT=$(dating . -m birthtime -f "dd-mm-yyyy" -d 2>&1)
+OUTPUT=$(fixts . -m birthtime -f "dd-mm-yyyy" -d 2>&1)
 
 # Check custom format is applied
 if echo "$OUTPUT" | grep -q "15-01-2023"; then
@@ -196,7 +196,7 @@ rm -f *.jpg
 touch "shift-metadata.jpg"
 touch -t 202301151430 "shift-metadata.jpg"  # 2023-01-15 14:30
 
-OUTPUT=$(dating . -m birthtime --shift +3h -d 2>&1)
+OUTPUT=$(fixts . -m birthtime --shift +3h -d 2>&1)
 
 # Check shift is indicated
 if echo "$OUTPUT" | grep -q "Time Shift: +3h"; then
@@ -233,7 +233,7 @@ touch -t 202301151430 "copy-test.jpg"
 # Files will be moved (renamed) instead of copied
 # This is a known limitation documented in the code
 
-OUTPUT=$(dating . -m birthtime --copy -e 2>&1)
+OUTPUT=$(fixts . -m birthtime --copy -e 2>&1)
 
 # Check _c directory created (copy mode behavior)
 if [ -d "_c" ]; then

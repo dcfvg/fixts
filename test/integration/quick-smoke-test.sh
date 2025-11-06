@@ -8,9 +8,9 @@ GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-TEST_DIR="/tmp/dating-smoke-test-$$"
+TEST_DIR="/tmp/fixts-smoke-test-$$"
 
-echo "🔥 Dating CLI - Quick Smoke Test"
+echo "🔥 Fixts CLI - Quick Smoke Test"
 echo "=================================="
 echo ""
 
@@ -21,7 +21,7 @@ cd "$TEST_DIR"
 
 echo "1️⃣  Testing basic rename..."
 touch "2023-01-15-14-30-00-document.txt"
-OUTPUT=$(dating . -e --no-interactive 2>&1)
+OUTPUT=$(fixts . -e 2>&1)
 
 if ls -1 | grep -q "2023-01-15 14.30.00"; then
     echo -e "   ${GREEN}✓ Basic rename works${NC}"
@@ -36,7 +36,7 @@ echo "2️⃣  Testing time shift (+2h)..."
 cd "$TEST_DIR"
 rm -rf *
 touch "2024-01-01-22-00-00-test.txt"
-OUTPUT=$(dating . --shift +2h -e --no-interactive 2>&1)
+OUTPUT=$(fixts . --shift +2h -e 2>&1)
 
 if [ -d "_c" ] && ls _c/ | grep -q "2024-01-02 00.00.00"; then
     echo -e "   ${GREEN}✓ Time shift works (crosses midnight)${NC}"
@@ -53,7 +53,7 @@ touch "photo.jpg"
 touch -t 202112251430 "photo.jpg"
 echo ""
 echo "3️⃣  Testing metadata extraction..."
-OUTPUT=$(dating . --use-metadata -e --no-interactive 2>&1)
+OUTPUT=$(fixts . --use-metadata -e 2>&1)
 
 if ls -1 | grep -q "2021-12-25"; then
     echo -e "   ${GREEN}✓ Metadata extraction works${NC}"

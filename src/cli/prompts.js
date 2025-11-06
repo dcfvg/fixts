@@ -6,6 +6,12 @@ import { createInterface } from 'readline';
  * @returns {Promise<boolean>} - True if user confirmed (y/yes), false otherwise
  */
 export async function promptConfirmation(message) {
+  // Auto-confirm in non-interactive environments (CI, tests, pipes)
+  if (!process.stdin.isTTY || !process.stdout.isTTY) {
+    console.log(`${message} (auto-confirmed in non-interactive mode)`);
+    return true;
+  }
+
   const rl = createInterface({
     input: process.stdin,
     output: process.stdout,

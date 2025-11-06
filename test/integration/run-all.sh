@@ -19,7 +19,7 @@ NC='\033[0m'
 echo ""
 echo -e "${BLUE}╔════════════════════════════════════════╗${NC}"
 echo -e "${BLUE}║                                        ║${NC}"
-echo -e "${BLUE}║   Dating CLI Integration Test Suite   ║${NC}"
+echo -e "${BLUE}║   Fixts CLI Integration Test Suite    ║${NC}"
 echo -e "${BLUE}║                                        ║${NC}"
 echo -e "${BLUE}╚════════════════════════════════════════╝${NC}"
 echo ""

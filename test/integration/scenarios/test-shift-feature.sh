@@ -6,7 +6,7 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 FIXTURE_DIR="$SCRIPT_DIR/../fixtures"
-TEST_DIR="/tmp/dating-test-shift-$$"
+TEST_DIR="/tmp/fixts-test-shift-$$"
 
 GREEN='\033[0;32m'
 RED='\033[0;31m'
@@ -35,8 +35,8 @@ echo ""
 
 # Test 2.1: Positive shift (+2h)
 echo "📋 Test 2.1: Positive shift (+2h)"
-echo "   Command: dating . --shift +2h -d"
-OUTPUT=$(dating . --shift +2h -d 2>&1)
+echo "   Command: fixts . --shift +2h -d"
+OUTPUT=$(fixts . --shift +2h -d 2>&1)
 
 if echo "$OUTPUT" | grep -q "Time Shift: +2h"; then
     echo -e "   ${GREEN}✓ Shift detected in output${NC}"
@@ -64,8 +64,8 @@ fi
 # Test 2.2: Negative shift (-3h)
 echo ""
 echo "📋 Test 2.2: Negative shift (-3h)"
-echo "   Command: dating . --shift -3h -d"
-OUTPUT=$(dating . --shift -3h -d 2>&1)
+echo "   Command: fixts . --shift -3h -d"
+OUTPUT=$(fixts . --shift -3h -d 2>&1)
 
 if echo "$OUTPUT" | grep -q "Time Shift: -3h"; then
     echo -e "   ${GREEN}✓ Negative shift detected${NC}"
@@ -85,8 +85,8 @@ fi
 # Test 2.3: Execute with shift
 echo ""
 echo "🔨 Test 2.3: Execute with positive shift"
-echo "   Command: dating . --shift +2h -e"
-OUTPUT=$(dating . --shift +2h -e 2>&1)
+echo "   Command: fixts . --shift +2h -e"
+OUTPUT=$(fixts . --shift +2h -e 2>&1)
 
 if echo "$OUTPUT" | grep -q "Successfully copied"; then
     COUNT=$(echo "$OUTPUT" | grep -oE 'Successfully copied [0-9]+' | grep -oE '[0-9]+')
@@ -111,7 +111,7 @@ fi
 echo ""
 echo "📋 Test 2.4: Complex shift (-1d3h30m)"
 rm -rf _c/  # Clean previous test
-OUTPUT=$(dating . --shift -1d3h30m -d 2>&1)
+OUTPUT=$(fixts . --shift -1d3h30m -d 2>&1)
 
 if echo "$OUTPUT" | grep -q "Time Shift:.*1d.*3h.*30m"; then
     echo -e "   ${GREEN}✓ Complex shift format parsed${NC}"

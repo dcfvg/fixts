@@ -46,7 +46,7 @@ function parseArgs(args) {
       options.wizard = true;
     } else if (arg === '--no-revert') {
       options.noRevert = true;
-    } else if (arg === '--dry-run') {
+    } else if (arg === '--dry-run' || arg === '-d') {
       options.dryRun = true;
     } else if (arg === '--execute' || arg === '-e') {
       options.dryRun = false;
@@ -127,7 +127,7 @@ function parseArgs(args) {
         // If value has a dot, it's an extension (remove dot); otherwise it's a directory name
         options.excludeExt.push(value.startsWith('.') ? value.slice(1).toLowerCase() : value);
       }
-    } else if (arg === '--depth' || arg === '-d') {
+    } else if (arg === '--depth') {
       if (i + 1 < args.length) {
         const depthValue = parseInt(args[++i], 10);
         if (isNaN(depthValue) || depthValue < 1) {
@@ -669,9 +669,11 @@ async function main() {
           interactive: options.wizard !== false,
         });
 
-        if (result.success || result.declined) {
-          process.exit(result.success ? 0 : 0);
+        if (result.declined) {
+          process.exit(0);
         }
+
+        process.exit(result.success ? 0 : 1);
       }
 
       if (options.useMetadata) {
@@ -683,7 +685,7 @@ async function main() {
           interactive: options.wizard !== false,
         });
 
-        process.exit(result.success ? 0 : 0);
+        process.exit(result.success ? 0 : 1);
       }
 
       process.exit(0);
@@ -707,7 +709,7 @@ async function main() {
             interactive: options.wizard !== false,
           });
 
-          process.exit(result.success ? 0 : 0);
+          process.exit(result.success ? 0 : 1);
         } else {
           // Offer to scan metadata
           console.log('💡 Tip: Use --use-metadata to extract dates from file metadata (EXIF, modification time, etc.)');
@@ -854,13 +856,13 @@ async function main() {
             console.log(`    fixts "${basename(targetPath)}" --resolution 1900s --execute`);
           }
           console.log('  Or use interactive mode:');
-          console.log(`    dating "${basename(targetPath)}" --interactive --execute`);
+          console.log(`    fixts "${basename(targetPath)}" --interactive --execute`);
           console.log('');
         }
 
         if (withoutTimestamp > 0 && !options.useMetadata) {
           console.log('  To process files without timestamps (using metadata):');
-          console.log(`    dating "${basename(targetPath)}" --use-metadata --execute`);
+          console.log(`    fixts "${basename(targetPath)}" --use-metadata --execute`);
           console.log('');
         }
 
@@ -871,11 +873,17 @@ async function main() {
     }
 
     // Prompt for confirmation in execute mode
+    // Skip confirmation if no TTY (non-interactive environment like tests)
     let confirmed = true;
-    if (options.wizard !== false) {
+    const isInteractive = process.stdin.isTTY && process.stdout.isTTY;
+
+    if (isInteractive && options.wizard !== false) {
       confirmed = await promptConfirmation(
         '\nApply these changes?'
       );
+    } else if (!isInteractive) {
+      // In non-interactive environments (CI, tests, pipes), auto-confirm
+      console.log('Non-interactive mode detected - applying changes automatically');
     }
 
     if (!confirmed) {

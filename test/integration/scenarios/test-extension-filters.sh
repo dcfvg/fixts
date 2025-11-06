@@ -21,7 +21,7 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 
 # Create test directory
-TEST_DIR=$(mktemp -d /tmp/dating-test-extensions-XXXXX)
+TEST_DIR=$(mktemp -d /tmp/fixts-test-extensions-XXXXX)
 echo "📁 Setting up test directory..."
 echo "   Created: $TEST_DIR"
 
@@ -44,7 +44,7 @@ echo "📋 Test 1: Include only images (-i jpg png)"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
-OUTPUT=$(dating . -d -i jpg png 2>&1)
+OUTPUT=$(fixts . -d -i jpg png 2>&1)
 
 # Check that only jpg and png files are processed
 if echo "$OUTPUT" | grep -q "2024-01-15-photo.jpg"; then
@@ -82,7 +82,7 @@ echo "📋 Test 2: Exclude documents (-x pdf txt)"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
-OUTPUT=$(dating . -d -x pdf txt 2>&1)
+OUTPUT=$(fixts . -d -x pdf txt 2>&1)
 
 # Check that pdf and txt files are excluded
 if ! echo "$OUTPUT" | grep -q "2024-01-17-document.pdf"; then
@@ -121,7 +121,7 @@ echo "📋 Test 3: Combined filters (-i jpg png pdf -x pdf)"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
-OUTPUT=$(dating . -d -i jpg png pdf -x pdf 2>&1)
+OUTPUT=$(fixts . -d -i jpg png pdf -x pdf 2>&1)
 
 # pdf should be excluded even though it's in include list
 if ! echo "$OUTPUT" | grep -q "2024-01-17-document.pdf"; then
@@ -152,7 +152,7 @@ mkdir subdir
 touch "subdir/2024-01-21-sub-photo.jpg"
 touch "subdir/2024-01-22-sub-video.mp4"
 
-OUTPUT=$(dating . -d -i jpg 2>&1)
+OUTPUT=$(fixts . -d -i jpg 2>&1)
 
 # Check files from subdirectory
 if echo "$OUTPUT" | grep -q "2024-01-21-sub-photo.jpg"; then

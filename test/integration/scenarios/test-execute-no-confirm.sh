@@ -5,7 +5,7 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-TEST_DIR="/tmp/dating-test-execute-no-confirm-$$"
+TEST_DIR="/tmp/fixts-test-execute-no-confirm-$$"
 
 GREEN='\033[0;32m'
 RED='\033[0;31m'
@@ -61,7 +61,7 @@ touch "2023-01-15-14-30-00-photo.jpg"
 touch "2022-08-20-10-15-30-video.mp4"
 
 # This should execute immediately without prompt
-OUTPUT=$(dating . -e 2>&1)
+OUTPUT=$(fixts . -e 2>&1)
 EXIT_CODE=$?
 
 if [ "$EXIT_CODE" -eq 0 ] && echo "$OUTPUT" | grep -q "Successfully renamed"; then
@@ -97,7 +97,7 @@ touch "no-timestamp.mp3"
 touch -t 202301151430 "no-timestamp.jpg"
 touch -t 202206151200 "no-timestamp.mp3"
 
-OUTPUT=$(dating . -m birthtime -e 2>&1)
+OUTPUT=$(fixts . -m birthtime -e 2>&1)
 
 # Check execution
 if echo "$OUTPUT" | grep -q "Successfully renamed"; then
@@ -141,7 +141,7 @@ rm -f *.jpg *.mp3
 touch "format-test.jpg"
 touch -t 202301151430 "format-test.jpg"
 
-OUTPUT=$(dating . -m birthtime -f "yyyy-mm-dd" -e 2>&1)
+OUTPUT=$(fixts . -m birthtime -f "yyyy-mm-dd" -e 2>&1)
 
 # Check custom format applied (no time in filename)
 if ls -1 | grep -q "2023-01-15 format-test.jpg"; then
@@ -174,7 +174,7 @@ rm -rf _c
 # Create file and set birthtime properly
 touch -t 202301151430 "shift-test.jpg"  # 2023-01-15 14:30
 
-OUTPUT=$(dating . -m birthtime --shift +2h -e 2>&1)
+OUTPUT=$(fixts . -m birthtime --shift +2h -e 2>&1)
 
 # Check copy mode forced (safety for shift)
 if [ -d "_c" ]; then

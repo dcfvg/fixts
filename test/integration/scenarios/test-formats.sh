@@ -5,7 +5,7 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-TEST_DIR="/tmp/dating-test-formats-$$"
+TEST_DIR="/tmp/fixts-test-formats-$$"
 
 GREEN='\033[0;32m'
 RED='\033[0;31m'
@@ -32,7 +32,7 @@ echo ""
 
 # Test 4.1: Default format (yyyy-mm-dd hh.MM.ss)
 echo "📋 Test 4.1: Default format"
-OUTPUT=$(dating . -d 2>&1)
+OUTPUT=$(fixts . -d 2>&1)
 
 if echo "$OUTPUT" | grep -q "2024-01-15 14.30.45"; then
     echo -e "   ${GREEN}✓ Default format works (yyyy-mm-dd hh.MM.ss)${NC}"
@@ -45,7 +45,7 @@ fi
 # Test 4.2: Compact format (yyyymmdd_hhMMss)
 echo ""
 echo "📋 Test 4.2: Compact format"
-OUTPUT=$(dating . --format yyyymmdd_hhMMss -d 2>&1)
+OUTPUT=$(fixts . --format yyyymmdd_hhMMss -d 2>&1)
 
 if echo "$OUTPUT" | grep -q "20240115_143045"; then
     echo -e "   ${GREEN}✓ Compact format works${NC}"
@@ -58,7 +58,7 @@ fi
 # Test 4.3: ISO format (yyyy-mm-ddThh:MM:ss)
 echo ""
 echo "📋 Test 4.3: ISO format"
-OUTPUT=$(dating . --format "yyyy-mm-ddThh:MM:ss" -d 2>&1)
+OUTPUT=$(fixts . --format "yyyy-mm-ddThh:MM:ss" -d 2>&1)
 
 if echo "$OUTPUT" | grep -q "2024-01-15T14:30:45"; then
     echo -e "   ${GREEN}✓ ISO format works${NC}"
@@ -71,7 +71,7 @@ fi
 # Test 4.4: Date only (yyyy-mm-dd)
 echo ""
 echo "📋 Test 4.4: Date only format"
-OUTPUT=$(dating . --format yyyy-mm-dd -d 2>&1)
+OUTPUT=$(fixts . --format yyyy-mm-dd -d 2>&1)
 
 if echo "$OUTPUT" | grep -q "2024-01-15 -"; then
     echo -e "   ${GREEN}✓ Date-only format works${NC}"
@@ -84,7 +84,7 @@ fi
 # Test 4.5: Custom format with text
 echo ""
 echo "📋 Test 4.5: Custom format with separators"
-OUTPUT=$(dating . --format "yyyy_mm_dd-hh_MM_ss" -d 2>&1)
+OUTPUT=$(fixts . --format "yyyy_mm_dd-hh_MM_ss" -d 2>&1)
 
 if echo "$OUTPUT" | grep -q "2024_01_15-14_30_45"; then
     echo -e "   ${GREEN}✓ Custom separator format works${NC}"
@@ -97,7 +97,7 @@ fi
 # Test 4.6: Execute with format
 echo ""
 echo "🔨 Test 4.6: Execute with custom format"
-OUTPUT=$(dating . --format yyyymmdd_hhMMss -e --resolution dd-mm-yyyy --resolution 2000s 2>&1)
+OUTPUT=$(fixts . --format yyyymmdd_hhMMss -e --resolution dd-mm-yyyy --resolution 2000s 2>&1)
 
 if ls -1 | grep -q "20240115_143045"; then
     echo -e "   ${GREEN}✓ Format applied in execute mode${NC}"

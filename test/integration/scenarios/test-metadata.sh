@@ -6,7 +6,7 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 FIXTURE_DIR="$SCRIPT_DIR/../fixtures"
-TEST_DIR="/tmp/dating-test-metadata-$$"
+TEST_DIR="/tmp/fixts-test-metadata-$$"
 
 GREEN='\033[0;32m'
 RED='\033[0;31m'
@@ -39,8 +39,8 @@ echo ""
 
 # Test 3.1: Metadata extraction dry run (using -m earliest for fallback)
 echo "📋 Test 3.1: Metadata extraction with fallback (dry run)"
-echo "   Command: dating . -m earliest -d"
-OUTPUT=$(dating . -m earliest -d 2>&1)
+echo "   Command: fixts . -m earliest -d"
+OUTPUT=$(fixts . -m earliest -d 2>&1)
 
 if echo "$OUTPUT" | grep -q "Scanning file metadata"; then
     echo -e "   ${GREEN}✓ Metadata scanning initiated${NC}"
@@ -78,8 +78,8 @@ fi
 # Test 3.3: Execute metadata rename with fallback
 echo ""
 echo "🔨 Test 3.3: Execute metadata rename with fallback"
-echo "   Command: dating . -m earliest -e"
-OUTPUT=$(dating . -m earliest -e 2>&1)
+echo "   Command: fixts . -m earliest -e"
+OUTPUT=$(fixts . -m earliest -e 2>&1)
 
 if echo "$OUTPUT" | grep -q "Successfully renamed.*using metadata"; then
     COUNT=$(echo "$OUTPUT" | grep -oE 'Successfully renamed [0-9]+' | grep -oE '[0-9]+')
@@ -111,7 +111,7 @@ rm -f *.jpg *.pdf
 touch "photo-shift.jpg"
 touch -t 202301151430 "photo-shift.jpg"
 
-OUTPUT=$(dating . -m birthtime --shift +9h -d 2>&1)
+OUTPUT=$(fixts . -m birthtime --shift +9h -d 2>&1)
 
 if echo "$OUTPUT" | grep -q "Time Shift: +9h"; then
     echo -e "   ${GREEN}✓ Shift applied to metadata${NC}"

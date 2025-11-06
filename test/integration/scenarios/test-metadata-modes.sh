@@ -6,7 +6,7 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 FIXTURE_DIR="$SCRIPT_DIR/../fixtures"
-TEST_DIR="/tmp/dating-test-metadata-modes-$$"
+TEST_DIR="/tmp/fixts-test-metadata-modes-$$"
 
 GREEN='\033[0;32m'
 RED='\033[0;31m'
@@ -63,7 +63,7 @@ echo "   - Show context-aware hints"
 echo "   - Display 'NEXT STEPS' section"
 echo ""
 
-OUTPUT=$(dating . -m content -d 2>&1 || true)
+OUTPUT=$(fixts . -m content -d 2>&1 || true)
 
 # Check that files without metadata are skipped
 if echo "$OUTPUT" | grep -q "Skipped.*file(s) without metadata"; then
@@ -125,7 +125,7 @@ echo "   - No files skipped"
 echo "   - Source shown as 'creation time'"
 echo ""
 
-OUTPUT=$(dating . -m birthtime -d 2>&1 || true)
+OUTPUT=$(fixts . -m birthtime -d 2>&1 || true)
 
 # Check that files are processed
 if echo "$OUTPUT" | grep -q "Found dates in"; then
@@ -172,7 +172,7 @@ echo "   - No files skipped"
 echo "   - Mixed sources shown"
 echo ""
 
-OUTPUT=$(dating . -m earliest -d 2>&1 || true)
+OUTPUT=$(fixts . -m earliest -d 2>&1 || true)
 
 # Check that files are processed
 if echo "$OUTPUT" | grep -q "Found dates in"; then
@@ -216,7 +216,7 @@ touch -t 202301151430 "photo-exec.jpg"
 touch -t 202112251845 "audio-exec.mp3"
 touch -t 202006151200 "doc-exec.pdf"
 
-OUTPUT=$(dating . -m earliest -e 2>&1)
+OUTPUT=$(fixts . -m earliest -e 2>&1)
 
 # Check execution
 if echo "$OUTPUT" | grep -q "Successfully renamed"; then
@@ -254,7 +254,7 @@ rm -f *.jpg *.mp3 *.pdf
 touch "alias-test.jpg"
 touch -t 202301151430 "alias-test.jpg"
 
-OUTPUT=$(dating . -m exif -d 2>&1 || true)
+OUTPUT=$(fixts . -m exif -d 2>&1 || true)
 
 if echo "$OUTPUT" | grep -q "Skipped.*file(s) without metadata" || echo "$OUTPUT" | grep -q "no dates found"; then
     echo -e "   ${GREEN}✓ Alias 'exif' works as 'content' (strict mode)${NC}"
@@ -263,7 +263,7 @@ else
 fi
 
 # Test alias: creation → birthtime
-OUTPUT=$(dating . -m creation -d 2>&1)
+OUTPUT=$(fixts . -m creation -d 2>&1)
 
 if echo "$OUTPUT" | grep -q "Found dates in.*1.*file" || echo "$OUTPUT" | grep -q "creation time"; then
     echo -e "   ${GREEN}✓ Alias 'creation' works as 'birthtime'${NC}"
@@ -281,30 +281,30 @@ echo -e "${BLUE}📋 Test 6: Syntax variations${NC}"
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 
-# Test: dating -m . (source defaults to 'content')
-OUTPUT=$(dating -m . -d 2>&1 || true)
+# Test: fixts -m . (source defaults to 'content')
+OUTPUT=$(fixts -m . -d 2>&1 || true)
 if [ $? -eq 0 ] || echo "$OUTPUT" | grep -q "Scanning"; then
-    echo -e "   ${GREEN}✓ Syntax 'dating -m .' works${NC}"
+    echo -e "   ${GREEN}✓ Syntax 'fixts -m .' works${NC}"
 else
-    echo -e "   ${RED}✗ Syntax 'dating -m .' failed${NC}"
+    echo -e "   ${RED}✗ Syntax 'fixts -m .' failed${NC}"
     exit 1
 fi
 
-# Test: dating -m content . (explicit source)
-OUTPUT=$(dating -m content . -d 2>&1 || true)
+# Test: fixts -m content . (explicit source)
+OUTPUT=$(fixts -m content . -d 2>&1 || true)
 if [ $? -eq 0 ] || echo "$OUTPUT" | grep -q "Scanning"; then
-    echo -e "   ${GREEN}✓ Syntax 'dating -m content .' works${NC}"
+    echo -e "   ${GREEN}✓ Syntax 'fixts -m content .' works${NC}"
 else
-    echo -e "   ${RED}✗ Syntax 'dating -m content .' failed${NC}"
+    echo -e "   ${RED}✗ Syntax 'fixts -m content .' failed${NC}"
     exit 1
 fi
 
-# Test: dating -m birthtime . (source at end)
-OUTPUT=$(dating -m birthtime . -d 2>&1)
+# Test: fixts -m birthtime . (source at end)
+OUTPUT=$(fixts -m birthtime . -d 2>&1)
 if [ $? -eq 0 ] || echo "$OUTPUT" | grep -q "Scanning"; then
-    echo -e "   ${GREEN}✓ Syntax 'dating -m birthtime .' works${NC}"
+    echo -e "   ${GREEN}✓ Syntax 'fixts -m birthtime .' works${NC}"
 else
-    echo -e "   ${RED}✗ Syntax 'dating -m birthtime .' failed${NC}"
+    echo -e "   ${RED}✗ Syntax 'fixts -m birthtime .' failed${NC}"
     exit 1
 fi
 
@@ -322,7 +322,7 @@ rm -f *.jpg
 touch "shift-test.jpg"
 touch -t 202301151430 "shift-test.jpg"  # 2023-01-15 14:30
 
-OUTPUT=$(dating . -m birthtime --shift +2h -d 2>&1)
+OUTPUT=$(fixts . -m birthtime --shift +2h -d 2>&1)
 
 # Check shift indication
 if echo "$OUTPUT" | grep -q "Time Shift: +2h"; then
