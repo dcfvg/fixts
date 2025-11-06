@@ -229,7 +229,7 @@ else
 fi
 
 # Verify files are renamed with date prefix
-DATED_FILES=$(ls -1 | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}' | wc -l | xargs)
+DATED_FILES=$(ls -1 | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}' | wc -l | awk '{print $1}')
 if [ "$DATED_FILES" -eq 3 ]; then
     echo -e "   ${GREEN}✓ All 3 files renamed with date prefix${NC}"
     echo "   Renamed files:"

@@ -34,7 +34,7 @@ touch "2020-01-01-12-00-00-file(v2).txt"
 touch "meeting.2023.12.15.notes.txt"
 
 echo "   Created: $TEST_DIR"
-echo "   Files: $(ls -1 | wc -l | xargs)"
+echo "   Files: $(ls -1 | wc -l | awk '{print $1}')"
 echo ""
 
 # Test 1.1: Dry run
@@ -75,7 +75,7 @@ fi
 # Test 1.3: Verify format
 echo ""
 echo "🔍 Test 1.3: Verify output format"
-FORMATTED_COUNT=$(ls -1 | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}\.[0-9]{2}\.[0-9]{2}' | wc -l | xargs)
+FORMATTED_COUNT=$(ls -1 | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}\.[0-9]{2}\.[0-9]{2}' | wc -l | awk '{print $1}')
 
 if [ "$FORMATTED_COUNT" -gt 0 ]; then
     echo -e "   ${GREEN}✓ Found $FORMATTED_COUNT properly formatted files${NC}"

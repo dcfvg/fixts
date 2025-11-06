@@ -190,7 +190,7 @@ echo "  ✓ Export formats with suffix"
 touch "export-2024-01-15_14.30.25_suffix-data.csv"
 
 echo ""
-echo "✅ Created $(ls -1 | wc -l | xargs) test fixtures in:"
+echo "✅ Created $(ls -1 | wc -l | awk '{print $1}') test fixtures in:"
 echo "   $FIXTURE_DIR"
 echo ""
 echo "� Pattern Distribution:"

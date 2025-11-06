@@ -100,7 +100,7 @@ fi
 # Verify _c directory exists
 if [ -d "_c" ]; then
     echo -e "   ${GREEN}✓ Timed directory created${NC}"
-    TIMED_COUNT=$(ls -1 _c/ | wc -l | xargs)
+    TIMED_COUNT=$(ls -1 _c/ | wc -l | awk '{print $1}')
     echo "   Files in _c/: $TIMED_COUNT"
 else
     echo -e "   ${RED}✗ Timed directory not created${NC}"

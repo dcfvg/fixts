@@ -93,7 +93,7 @@ fi
 # Test 3.4: Verify files renamed
 echo ""
 echo "🔍 Test 3.4: Verify renamed files"
-RENAMED_COUNT=$(ls -1 | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}' | wc -l | xargs)
+RENAMED_COUNT=$(ls -1 | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}' | wc -l | awk '{print $1}')
 
 if [ "$RENAMED_COUNT" -eq 3 ]; then
     echo -e "   ${GREEN}✓ All 3 files renamed with date prefix${NC}"

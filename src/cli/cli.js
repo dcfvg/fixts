@@ -856,7 +856,7 @@ async function main() {
             console.log(`    fixts "${basename(targetPath)}" --resolution 1900s --execute`);
           }
           console.log('  Or use interactive mode:');
-          console.log(`    fixts "${basename(targetPath)}" --interactive --execute`);
+          console.log(`    fixts "${basename(targetPath)}" --wizard --execute`);
           console.log('');
         }
 

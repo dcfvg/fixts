@@ -73,7 +73,7 @@ else
 fi
 
 # Verify files renamed
-DATED_FILES=$(ls -1 | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}\.[0-9]{2}\.[0-9]{2}' | wc -l | xargs)
+DATED_FILES=$(ls -1 | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}\.[0-9]{2}\.[0-9]{2}' | wc -l | awk '{print $1}')
 if [ "$DATED_FILES" -ge 2 ]; then
     echo -e "   ${GREEN}✓ Files renamed (found $DATED_FILES dated files)${NC}"
 else
@@ -119,7 +119,7 @@ else
 fi
 
 # Verify files physically renamed
-DATED_FILES=$(ls -1 | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}' | wc -l | xargs)
+DATED_FILES=$(ls -1 | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}' | wc -l | awk '{print $1}')
 if [ "$DATED_FILES" -ge 2 ]; then
     echo -e "   ${GREEN}✓ Files physically renamed${NC}"
 else

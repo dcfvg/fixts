@@ -81,7 +81,7 @@ echo "⏪ Test 6.3: Execute revert script"
 chmod +x revert.sh
 
 # Save current state
-RENAMED_FILES=$(ls -1 | grep "^20" | wc -l | xargs)
+RENAMED_FILES=$(ls -1 | grep "^20" | wc -l | awk '{print $1}')
 
 # Execute revert
 ./revert.sh
@@ -113,7 +113,7 @@ fi
 echo ""
 echo "🔍 Test 6.4: Verify renamed files removed"
 
-REMAINING_RENAMED=$(ls -1 | grep "^20.*hh.MM.ss" | wc -l | xargs || echo 0)
+REMAINING_RENAMED=$(ls -1 | grep "^20.*hh.MM.ss" | wc -l | awk '{print $1}' || echo 0)
 if [ "$REMAINING_RENAMED" -eq 0 ]; then
     echo -e "   ${GREEN}✓ All renamed files reverted${NC}"
 else

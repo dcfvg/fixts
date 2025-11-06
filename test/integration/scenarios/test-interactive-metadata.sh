@@ -123,7 +123,7 @@ if echo "$OUTPUT" | grep -q "Successfully renamed"; then
     
     # Note: Counter might be 0 if files were already renamed in previous test
     # Check physical files instead
-    DATED_FILES=$(ls -1 | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}' | wc -l | xargs)
+    DATED_FILES=$(ls -1 | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}' | wc -l | awk '{print $1}')
     if [ "$DATED_FILES" -ge 3 ]; then
         echo -e "   ${GREEN}✓ Expected files present (already formatted or just renamed)${NC}"
     else
@@ -145,7 +145,7 @@ else
 fi
 
 # Verify files are actually renamed
-DATED_FILES=$(ls -1 | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}' | wc -l | xargs)
+DATED_FILES=$(ls -1 | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}' | wc -l | awk '{print $1}')
 # Should have at least 5 files: 2 originally with timestamps + 3 renamed
 if [ "$DATED_FILES" -ge 5 ]; then
     echo -e "   ${GREEN}✓ Files physically renamed (found $DATED_FILES dated files total)${NC}"
@@ -240,7 +240,7 @@ if [ -d "_c" ]; then
     echo -e "   ${GREEN}✓ '_c' directory created${NC}"
     
     # Check file in _c directory
-    COPIED_FILES=$(ls -1 _c/ 2>/dev/null | wc -l | xargs)
+    COPIED_FILES=$(ls -1 _c/ 2>/dev/null | wc -l | awk '{print $1}')
     if [ "$COPIED_FILES" -ge 1 ]; then
         echo -e "   ${GREEN}✓ File in '_c' directory${NC}"
     else
