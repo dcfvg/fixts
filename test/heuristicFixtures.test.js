@@ -189,6 +189,45 @@ describe('Heuristic Detection on Fixtures', () => {
         assert.fail('WhatsApp format should be detected');
       }
     });
+
+    it('should detect double timestamp format (DATE TIME - TIME)', () => {
+      // Test format: "YYYY-MM-DD HH.MM.SS - HH.MM.SS DSC*.jpg"
+      // Common in camera files where first time is metadata, second is actual capture time
+      const testCases = [
+        {
+          filename: '2025-10-08 00.00.00 - 10.03.23 DSC07251.jpg',
+          expected: { year: 2025, month: 9, day: 8, hour: 10, minute: 3, second: 23 },
+        },
+        {
+          filename: '2025-10-08 00.00.00 - 10.09.25 DSC07281.jpg',
+          expected: { year: 2025, month: 9, day: 8, hour: 10, minute: 9, second: 25 },
+        },
+        {
+          filename: '2025-10-08 00.00.00 - 10.10.21 DSC07287.jpg',
+          expected: { year: 2025, month: 9, day: 8, hour: 10, minute: 10, second: 21 },
+        },
+      ];
+
+      testCases.forEach(({ filename, expected }) => {
+        const result = parseTimestamp(filename, { method: DETECTION_METHOD.HEURISTIC });
+
+        if (result) {
+          console.log(`\n  ${filename}: ✅ Detected`);
+          console.log(`    Expected: ${expected.year}-${String(expected.month + 1).padStart(2, '0')}-${String(expected.day).padStart(2, '0')} ${String(expected.hour).padStart(2, '0')}:${String(expected.minute).padStart(2, '0')}:${String(expected.second).padStart(2, '0')}`);
+          console.log(`    Got:      ${result.getFullYear()}-${String(result.getMonth() + 1).padStart(2, '0')}-${String(result.getDate()).padStart(2, '0')} ${String(result.getHours()).padStart(2, '0')}:${String(result.getMinutes()).padStart(2, '0')}:${String(result.getSeconds()).padStart(2, '0')}`);
+
+          assert.strictEqual(result.getFullYear(), expected.year);
+          assert.strictEqual(result.getMonth(), expected.month); // JS months are 0-indexed
+          assert.strictEqual(result.getDate(), expected.day);
+          assert.strictEqual(result.getHours(), expected.hour);
+          assert.strictEqual(result.getMinutes(), expected.minute);
+          assert.strictEqual(result.getSeconds(), expected.second);
+        } else {
+          console.log(`  ${filename}: ❌ Not detected`);
+          assert.fail(`Double timestamp format should be detected in ${filename}`);
+        }
+      });
+    });
   });
 
   describe('Performance indicators', () => {

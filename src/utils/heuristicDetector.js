@@ -630,13 +630,31 @@ function analyzeSeparatedComponents(sequences, filename, dateFormat = 'dmy') {
           }
         }
 
-        // Pattern: 2-2-2 = could be YY-MM-DD or DD-MM-YY
+        // Pattern: 2-2-2 = could be TIME (HH:MM:SS) or DATE (YY-MM-DD or DD-MM-YY)
+        // IMPORTANT: Check TIME first because time constraints are stricter
         if (seq.digits === 2 && seq2.digits === 2 && seq3.digits === 2) {
           const v1 = seq.numValue;
           const v2 = seq2.numValue;
           const v3 = seq3.numValue;
 
-          // Heuristic: if v3 >= 20 && v3 <= 30, likely DD-MM-YY (2020-2030)
+          // First check if it's a valid TIME (HH:MM:SS) - stricter constraints
+          if (validators.hour(v1) && validators.minute(v2) && validators.second(v3)) {
+            results.push({
+              type: 'TIME',
+              hour: v1,
+              minute: v2,
+              second: v3,
+              precision: 'second',
+              start: seq.start,
+              end: seq3.end,
+              separator: sep1,
+            });
+            i += 2;
+            continue;
+          }
+
+          // Then check if it's a date: DD-MM-YY (2020-2030)
+          // Heuristic: if v3 >= 20 && v3 <= 30, likely DD-MM-YY
           if (v3 >= 20 && v3 <= 30 && validators.day(v1) && validators.month(v2)) {
             results.push({
               type: 'EUROPEAN_YY_DATE',
@@ -660,30 +678,6 @@ function analyzeSeparatedComponents(sequences, filename, dateFormat = 'dmy') {
               month: v2,
               day: v3,
               precision: 'day',
-              start: seq.start,
-              end: seq3.end,
-              separator: sep1,
-            });
-            i += 2;
-            continue;
-          }
-        }
-      }
-
-      // Look for time patterns: HH:MM:SS or HH.MM.SS or HH-MM-SS
-      if (sep1 && sep1 === sep2 && [':', '.', '-', '_'].includes(sep1)) {
-        if (seq.digits === 2 && seq2.digits === 2 && seq3.digits === 2) {
-          const hour = seq.numValue;
-          const minute = seq2.numValue;
-          const second = seq3.numValue;
-
-          if (validators.hour(hour) && validators.minute(minute) && validators.second(second)) {
-            results.push({
-              type: 'TIME',
-              hour,
-              minute,
-              second,
-              precision: 'second',
               start: seq.start,
               end: seq3.end,
               separator: sep1,
@@ -993,12 +987,42 @@ export function getBestTimestamp(filename, options = {}) {
     return null;
   }
 
+  // Special case: merge DATE + TIME when separated (e.g., "2025-10-08 00.00.00 - 10.03.23")
+  // Look for pattern: full date with time (precision=second) followed by another time component
+  const fullDateTime = timestamps.find(ts => ts.year && ts.month && ts.day && ts.precision === 'second');
+  const timeOnly = timestamps.find(ts => !ts.year && ts.hour !== undefined && ts.precision === 'second');
+
+  if (fullDateTime && timeOnly && timeOnly.start > fullDateTime.end) {
+    // Merge: use date from first, time from second
+    return {
+      ...fullDateTime,
+      hour: timeOnly.hour,
+      minute: timeOnly.minute,
+      second: timeOnly.second,
+      start: fullDateTime.start,
+      end: timeOnly.end,
+      type: 'MERGED_DATETIME',
+    };
+  }
+
   // Precision order: millisecond > second > day > month > year
   const precisionOrder = { millisecond: 5, second: 4, day: 3, month: 2, year: 1 };
 
   timestamps.sort((a, b) => {
     const precA = precisionOrder[a.precision] || 0;
     const precB = precisionOrder[b.precision] || 0;
+
+    // If same precision, prefer the one with time components (more complete)
+    if (precA === precB) {
+      const hasTimeA = a.hour !== undefined ? 1 : 0;
+      const hasTimeB = b.hour !== undefined ? 1 : 0;
+      if (hasTimeA !== hasTimeB) {
+        return hasTimeB - hasTimeA;
+      }
+      // If still equal, prefer the later one in the filename
+      return b.start - a.start;
+    }
+
     return precB - precA;
   });
 

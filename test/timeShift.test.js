@@ -263,7 +263,7 @@ describe('Integration tests', () => {
 
   it('should handle round-trip formatting', () => {
     const inputs = ['+1d', '+2h30m', '-1h15m', '+1d2h30m45s'];
-    
+
     inputs.forEach(input => {
       const ms = parseTimeShift(input);
       const formatted = formatTimeShift(ms);
@@ -278,7 +278,7 @@ describe('Integration tests', () => {
     const date = new Date('2024-07-04T16:00:00Z');
     const shiftMs = parseTimeShift('-1d3h');
     const corrected = applyTimeShift(date, shiftMs);
-    
+
     assert.equal(corrected.toISOString(), '2024-07-03T13:00:00.000Z');
     assert.equal(validateShiftedDate(corrected), true);
     assert.equal(formatTimeShift(shiftMs), '-1d 3h');
