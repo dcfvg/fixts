@@ -77,9 +77,9 @@ touch "2020-01-01-12-00-00-file@work.txt"
 # GROUP 7: Phone numbers (must NOT be removed)
 # ============================================
 echo "  ✓ Files with phone numbers"
-touch "2019-03-06-07-45-01-0612345678-[1].m4a"
-touch "2018-12-19-11-59-53-+33612345678.mp3"
-touch "2019-01-23-22-53-04-Contact-+33612345678-[0].m4a"
+touch "2019-03-06-07-45-01-5550000000-[1].m4a"
+touch "2018-12-19-11-59-53-+15550000000.mp3"
+touch "2019-01-23-22-53-04-Contact-+15550000000-[0].m4a"
 
 # ============================================
 # GROUP 8: Keyword Formats
@@ -181,7 +181,7 @@ touch "whatsapp-image-2024-10-25-at-17.04.12.jpg"
 # GROUP 20: Double Timestamps (Instagram Montages)
 # ============================================
 echo "  ✓ Instagram montage formats"
-touch "montage-2020-01-04_19.09.17_1234567890123456789_0987654321.jpg"
+touch "montage-2020-01-04_19.09.17_1234567890123456789_5550000000.jpg"
 
 # ============================================
 # GROUP 21: Export with Technical Suffix

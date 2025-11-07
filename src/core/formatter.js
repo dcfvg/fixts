@@ -93,37 +93,35 @@ export function extractAndFormat(filename, template = 'yyyy-mm-dd hh.MM.ss', opt
 
 /**
  * Detect which date/time components are defined in the filename
+ * Uses the actual heuristic detector to determine precision instead of regex patterns
  * @param {string} filename - Filename to analyze
  * @returns {Object} - Object indicating which components are present
  */
 function detectDefinedComponents(filename) {
-  // Check for time components
-  // Must have time-like numbers (00-23 for hours, 00-59 for minutes/seconds)
-  // AND be part of a datetime pattern (after a date) OR standalone with colons/dots
-  const hasTimeWithSeparators = /(\d{4}[-_/.]\d{2}[-_/.]\d{2})[\s T_-]+(\d{2})[.:_-](\d{2})[.:_-](\d{2})/.test(filename);
-  const hasTimeHHMM = /(\d{4}[-_/.]\d{2}[-_/.]\d{2})[-_](\d{2})[.:_-](\d{2})(?:[^:.\d]|$)/.test(filename); // YYYY-MM-DD-HH_MM (without seconds)
-  const hasTimeCompact = /\d{4}[-_]\d{2}[-_]\d{2}[-_]\d{6}/.test(filename); // YYYY-MM-DD-HHMMSS
-  const hasTimeWithAt = /(\d{4}[-_/.]\d{2}[-_/.]\d{2})\s+(?:at|à)\s+(\d{2})[.](\d{2})[.](\d{2})/i.test(filename); // YYYY-MM-DD at HH.MM.SS
-  const hasTimeWithComma = /\d{2}[-_]\d{2}[-_]\d{4}[,]\d{2}[-_]\d{2}/.test(filename); // DD-MM-YYYY,HH-MM
-  const hasCompactTime4Digit = /\d{8}[_-]\d{6}/.test(filename); // YYYYMMDD_HHMMSS
-  const hasCompactTime2Digit = /\b\d{6}[_-]\d{6}\b/.test(filename); // YYMMDD_HHMMSS
-  const hasTime = hasTimeWithSeparators || hasTimeHHMM || hasCompactTime4Digit || hasCompactTime2Digit || hasTimeWithComma || hasTimeWithAt || hasTimeCompact;
+  // Use the actual heuristic detector to get accurate component information
+  const detected = getBestTimestamp(filename);
 
-  // Check for day component (DD in various formats) - include dots and slashes
-  const hasDayInDate = /\d{4}[-_/.]\d{2}[-_/.]\d{2}/.test(filename) || // YYYY-MM-DD, YYYY/MM/DD, YYYY.MM.DD
-                       /\d{2}[-_/.]\d{2}[-_/.]\d{4}/.test(filename) || // DD-MM-YYYY, DD/MM/YYYY, DD.MM.YYYY
-                       /\d{8}/.test(filename) || // YYYYMMDD
-                       /\b\d{6}[_-]\d{6}\b/.test(filename); // YYMMDD_HHMMSS
+  if (!detected) {
+    // No timestamp detected, return minimal components
+    return {
+      hasTime: false,
+      hasDay: false,
+      hasMonth: false,
+      hasYear: false,
+    };
+  }
 
-  // Check for month component (YYYY-MM but not YYYY-MM-DD) - include dots and slashes
-  const hasMonthOnly = /\d{4}[-_/.]\d{2}(?![-_/.]\d{2})/.test(filename); // YYYY-MM not followed by -DD
-  const hasMonthInDate = hasDayInDate || hasMonthOnly;
+  // Determine which components are present based on detection precision
+  const precision = detected.precision;
+  const hasTime = ['hour', 'minute', 'second', 'millisecond'].includes(precision);
+  const hasDay = ['day', 'hour', 'minute', 'second', 'millisecond'].includes(precision);
+  const hasMonth = precision !== 'year'; // All precisions except 'year' include month
 
   return {
     hasTime,
-    hasDay: hasDayInDate,
-    hasMonth: hasMonthInDate,
-    hasYear: true, // We always need at least a year to parse
+    hasDay,
+    hasMonth,
+    hasYear: true, // Always true if we detected a timestamp
   };
 }
 

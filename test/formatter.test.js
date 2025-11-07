@@ -1,8 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { formatDate, extractAndFormat, generateNewName } from '../src/core/formatter.js';
-import { formatTimestamp } from '../src/utils/heuristicDetector.js';
-import { createDate } from '../src/utils/dateUtils.js';
+import { formatDate, generateNewName } from '../src/core/formatter.js';
 import { parseTimestampFromName, parseTimestamp } from '../src/utils/timestampParser.js';
 
 describe('timestampUtils', () => {

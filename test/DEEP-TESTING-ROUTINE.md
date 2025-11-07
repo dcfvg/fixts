@@ -48,7 +48,7 @@ Create test files and verify the ACTUAL RENAMED OUTPUT:
 mkdir /tmp/dating-manual-test && cd /tmp/dating-manual-test
 
 # Test problematic patterns found in analysis
-touch "2022-05-22-11_10 - Verjat Benoit - DSC01470.jpg"
+touch "2022-05-22-11_10 - John Doe - DSC01470.jpg"
 touch "montage-2024-11-03_14.30.00_1234567890123456789.jpg"
 touch "2024-11-03-22.30.00-late.txt"
 

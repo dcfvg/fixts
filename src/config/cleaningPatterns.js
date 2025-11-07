@@ -18,7 +18,16 @@ export function applyCleaningPatterns(filename) {
   // 1. Convert underscores to spaces (common separator normalization)
   cleaned = cleaned.replace(/_+/g, ' ');
 
-  // 2. Separate words from numbers that got joined (heuristic)
+  // 2. Clean up orphaned separators that resulted from timestamp removal
+  // Pattern: dash/space followed by underscore remnants → just the separator
+  // Example: "export-_ suffix" → "export- suffix" → "export suffix"
+  cleaned = cleaned.replace(/[-\s]+_+\s*/g, ' ');  // Remove orphaned underscores after dashes/spaces
+  cleaned = cleaned.replace(/_+\s*[-\s]+/g, ' ');  // Remove orphaned underscores before dashes/spaces
+
+  // 3. Remove orphaned dashes followed by spaces (e.g., "export- suffix" → "export suffix")
+  cleaned = cleaned.replace(/-\s+/g, ' ');
+
+  // 4. Separate words from numbers that got joined (heuristic)
   // Only if there's a clear boundary: word(letters) + numbers(6+ digits)
   // Example: "Voix175528" → "Voix 175528", "Recording100658" → "Recording 100658"
   cleaned = cleaned.replace(/([a-zA-Z])(\d{6,})/g, '$1 $2');
@@ -27,10 +36,10 @@ export function applyCleaningPatterns(filename) {
   // Example: "100658Recording" → "100658 Recording"
   cleaned = cleaned.replace(/(\d{6,})([a-zA-Z])/g, '$1 $2');
 
-  // 3. Collapse multiple spaces
+  // 5. Collapse multiple spaces
   cleaned = cleaned.replace(/\s{2,}/g, ' ');
 
-  // 4. Remove leading/trailing separators and whitespace
+  // 6. Remove leading/trailing separators and whitespace
   cleaned = cleaned
     .replace(/\.{2,}/g, '.')           // Collapse consecutive dots
     .replace(/^[-_\s.—]+/, '')         // Remove leading separators

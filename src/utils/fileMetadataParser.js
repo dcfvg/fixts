@@ -34,7 +34,7 @@ async function parseTimestampFromEXIF(file) {
       const fs = await import('node:fs');
       const fileBuffer = await fs.promises.readFile(file);
       tags = ExifReader.load(fileBuffer, { expanded: true });
-    } else if (file instanceof File) {
+    } else if (typeof File !== 'undefined' && file instanceof File) {
       // Browser: File object
       if (!file.type.startsWith('image/')) {
         return null;
@@ -110,7 +110,7 @@ async function parseTimestampFromAudio(file) {
     if (typeof file === 'string') {
       // Node.js: Use parseFile (renamed to parseAudioFile to avoid conflict)
       metadata = await parseAudioFile(file);
-    } else if (file instanceof File) {
+    } else if (typeof File !== 'undefined' && file instanceof File) {
       // Browser: Use parseBlob
       // Only process audio files in browser
       if (!file.type.startsWith('audio/')) {

@@ -165,3 +165,200 @@ export interface PatternInfo {
 }
 
 export function detectPattern(filename: string): PatternInfo;
+
+// File metadata parsing (requires File API in browser)
+export function parseTimestampFromEXIF(file: File | string): Promise<Date | null>;
+export function parseTimestampFromAudio(file: File | string): Promise<Date | null>;
+
+// Batch processing API
+export interface BatchResult {
+  filename: string;
+  timestamp: Date | null;
+  confidence?: number;
+  type?: string;
+  precision?: string;
+}
+
+export interface ConfidenceGroups {
+  high: BatchResult[];
+  medium: BatchResult[];
+  low: BatchResult[];
+  none: BatchResult[];
+}
+
+export interface BatchStats {
+  total: number;
+  detected: number;
+  notDetected: number;
+  detectionRate: number;
+  averageConfidence: number;
+  typeDistribution: Record<string, number>;
+  ambiguous: number;
+}
+
+export function parseTimestampBatch(
+  filenames: string[],
+  options?: ParseOptions & { includeConfidence?: boolean }
+): BatchResult[];
+
+export function parseAndGroupByConfidence(
+  filenames: string[],
+  options?: ParseOptions
+): ConfidenceGroups;
+
+export function getBatchStats(results: BatchResult[]): BatchStats;
+
+export function filterByTimestamp(
+  filenames: string[]
+): { withTimestamp: string[]; withoutTimestamp: string[] };
+
+// Context-aware ambiguity resolution
+export interface ContextAnalysis {
+  suggestedFormat: 'dmy' | 'mdy';
+  confidence: number;
+  reasoning: string[];
+  needsUserInput: boolean;
+}
+
+export interface ResolutionResult {
+  action: 'auto-resolve' | 'prompt-user';
+  format?: 'dmy' | 'mdy';
+  confidence?: number;
+  reasoning?: string[];
+}
+
+export interface FormatSummary {
+  totalFiles: number;
+  ambiguousFiles: number;
+  suggestedFormat: 'dmy' | 'mdy' | null;
+  confidence: number;
+  needsUserInput: boolean;
+  details: string;
+}
+
+export function analyzeContextualFormat(
+  filenames: string[],
+  options?: { currentDir?: string }
+): ContextAnalysis;
+
+export function resolveAmbiguitiesByContext(
+  filenames: string[],
+  options?: { threshold?: number; currentDir?: string }
+): ResolutionResult;
+
+export function getContextualParsingOptions(filenames: string[]): ParseOptions;
+
+export function hasAmbiguousDates(filenames: string[]): boolean;
+
+export function getFormatSummary(filenames: string[]): FormatSummary;
+
+// Custom pattern management
+export class PatternValidationError extends Error {
+  constructor(message: string);
+}
+
+export interface CustomPattern {
+  name: string;
+  regex: RegExp | string;
+  priority?: number;
+  extractor: ((match: RegExpMatchArray, filename: string) => TimestampInfo | null) | Record<string, string>;
+}
+
+export function registerPattern(pattern: CustomPattern): void;
+
+export function unregisterPattern(name: string): boolean;
+
+export function getRegisteredPatterns(): CustomPattern[];
+
+export function clearPatterns(): void;
+
+export function hasPattern(name: string): boolean;
+
+export function getPattern(name: string): CustomPattern | null;
+
+export function applyCustomPatterns(filename: string): TimestampInfo | null;
+
+export function exportPatterns(): string;
+
+export function importPatterns(json: string): void;
+
+// Unified metadata extraction (browser-safe)
+export const SOURCE_TYPE: {
+  FILENAME: 'filename';
+  EXIF: 'exif';
+  AUDIO: 'audio';
+  FILE_SYSTEM: 'file_system';
+};
+
+export const DEFAULT_PRIORITY: string[];
+
+export interface TimestampSource {
+  type: string;
+  timestamp: Date;
+  confidence: number;
+}
+
+export interface ExtractOptions {
+  sources?: string[];
+  priority?: string[];
+  includeAll?: boolean;
+  includeConfidence?: boolean;
+  parsingOptions?: ParseOptions;
+}
+
+export interface ExtractResult {
+  timestamp: Date | null;
+  source: string | null;
+  confidence?: number;
+  allSources?: TimestampSource[];
+}
+
+export interface BatchExtractResult {
+  filename: string;
+  timestamp: Date | null;
+  source: string | null;
+  confidence?: number;
+}
+
+export interface SourceComparison {
+  filename: string;
+  sources: TimestampSource[];
+  discrepancy: boolean;
+  maxDifference: number;
+  recommendation: string | null;
+}
+
+export interface SourceStats {
+  distribution: Record<string, number>;
+  averageConfidence: Record<string, number>;
+  totalFiles: number;
+}
+
+export interface BestSourceSuggestion {
+  source: string | null;
+  confidence: number;
+  reasoning: string;
+}
+
+export function extractTimestamp(
+  file: File | string,
+  options?: ExtractOptions
+): Promise<ExtractResult>;
+
+export function extractTimestampBatch(
+  files: Array<File | string>,
+  options?: ExtractOptions
+): Promise<BatchExtractResult[]>;
+
+export function compareTimestampSources(
+  file: File | string,
+  options?: { threshold?: number }
+): Promise<SourceComparison>;
+
+export function getSourceStatistics(
+  results: BatchExtractResult[]
+): SourceStats;
+
+export function suggestBestSource(
+  results: BatchExtractResult[]
+): BestSourceSuggestion;
