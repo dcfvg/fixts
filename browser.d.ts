@@ -283,14 +283,15 @@ export function exportPatterns(): string;
 export function importPatterns(json: string): void;
 
 // Unified metadata extraction (browser-safe)
+// Note: Browser version does NOT include MTIME/BIRTHTIME (no file system access)
 export const SOURCE_TYPE: {
   FILENAME: 'filename';
   EXIF: 'exif';
   AUDIO: 'audio';
-  FILE_SYSTEM: 'file_system';
+  CUSTOM: 'custom';
 };
 
-export const DEFAULT_PRIORITY: string[];
+export const DEFAULT_PRIORITY: ['filename', 'exif', 'audio'];
 
 export interface TimestampSource {
   type: string;
@@ -307,43 +308,65 @@ export interface ExtractOptions {
 }
 
 export interface ExtractResult {
-  timestamp: Date | null;
-  source: string | null;
-  confidence?: number;
-  allSources?: TimestampSource[];
+  source: string;
+  timestamp: Date;
+  confidence: number;
+  details?: {
+    method?: string;
+    source?: string;
+  };
+}
+
+export interface ExtractResultAll {
+  primary: ExtractResult;
+  all: ExtractResult[];
 }
 
 export interface BatchExtractResult {
-  filename: string;
-  timestamp: Date | null;
-  source: string | null;
-  confidence?: number;
+  filepath: string;
+  result: ExtractResult | null;
 }
 
 export interface SourceComparison {
-  filename: string;
+  hasDiscrepancy: boolean;
   sources: TimestampSource[];
-  discrepancy: boolean;
-  maxDifference: number;
-  recommendation: string | null;
+  discrepancies: Array<{
+    source1: string;
+    source2: string;
+    difference: number;
+    message: string;
+  }>;
+  recommendation: string;
 }
 
 export interface SourceStats {
-  distribution: Record<string, number>;
-  averageConfidence: Record<string, number>;
-  totalFiles: number;
+  total: number;
+  detected: number;
+  sourceDistribution: Record<string, number>;
+  avgConfidence: number;
+  confidenceBySource: Record<string, number>;
 }
 
 export interface BestSourceSuggestion {
-  source: string | null;
+  suggestion: string | null;
   confidence: number;
-  reasoning: string;
+  timestamp?: Date;
+  alternatives?: ExtractResult[];
+  hasDiscrepancy: boolean;
+  discrepancies: Array<{
+    source1: string;
+    source2: string;
+    difference: number;
+    message: string;
+  }>;
+  reason: string;
 }
 
+// Browser version only accepts File objects (no string paths - no file system access)
 export function extractTimestamp(
   file: File | string,
   options?: ExtractOptions
-): Promise<ExtractResult>;
+): Promise<ExtractResult | ExtractResultAll | null>;
 
 export function extractTimestampBatch(
   files: Array<File | string>,
@@ -352,13 +375,14 @@ export function extractTimestampBatch(
 
 export function compareTimestampSources(
   file: File | string,
-  options?: { threshold?: number }
+  options?: { thresholdSeconds?: number }
 ): Promise<SourceComparison>;
 
+// These accept filepaths/Files, not pre-extracted results
 export function getSourceStatistics(
-  results: BatchExtractResult[]
-): SourceStats;
+  filepaths: Array<File | string>
+): Promise<SourceStats>;
 
 export function suggestBestSource(
-  results: BatchExtractResult[]
-): BestSourceSuggestion;
+  filepath: File | string
+): Promise<BestSourceSuggestion>;

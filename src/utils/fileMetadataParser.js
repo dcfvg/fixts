@@ -17,8 +17,11 @@ import { logger } from './logger.js';
  *
  * Priority: DateTimeOriginal > DateTimeDigitized > DateTime
  *
- * @param {File|string} file - Image file (File object) or file path (Node.js)
+ * @param {string} file - Image file path (Node.js usage - string paths only)
  * @returns {Promise<Date|null>} - Promise resolving to Date or null
+ *
+ * Note: The File object branch exists for internal use but is not part of the
+ * public Node.js API. For browser usage with File objects, use fixts/browser.
  */
 async function parseTimestampFromEXIF(file) {
   if (!file) {
@@ -95,8 +98,11 @@ async function parseTimestampFromEXIF(file) {
  *
  * Priority: common.date > format.creationTime > format.modificationTime > common.year
  *
- * @param {File|string} file - Audio file (File object) or file path (Node.js)
+ * @param {string} file - Audio file path (Node.js usage - string paths only)
  * @returns {Promise<Date|null>} - Promise resolving to Date or null
+ *
+ * Note: The File object branch exists for internal use but is not part of the
+ * public Node.js API. For browser usage with File objects, use fixts/browser.
  */
 async function parseTimestampFromAudio(file) {
   if (!file) {

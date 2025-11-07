@@ -20,11 +20,11 @@ export {
   parseEXIFDateTime
 } from './src/utils/dateUtils.js';
 
-// File metadata extraction (requires File API - browser File objects)
+// File metadata extraction (browser-safe - uses File API only, no Node.js deps)
 export {
   parseTimestampFromEXIF,
   parseTimestampFromAudio
-} from './src/utils/fileMetadataParser.js';
+} from './src/utils/fileMetadataParser-browser.js';
 
 export { applyCleaningPatterns } from './src/config/cleaningPatterns.js';
 

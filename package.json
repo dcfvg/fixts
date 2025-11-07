@@ -3,11 +3,21 @@
   "version": "1.0.8",
   "description": "CLI tool to normalize filenames and folders with timestamps to a consistent format",
   "main": "index.js",
+  "types": "index.d.ts",
   "type": "module",
   "exports": {
-    ".": "./index.js",
-    "./browser": "./browser.js",
-    "./browser.js": "./browser.js"
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./index.js"
+    },
+    "./browser": {
+      "types": "./browser.d.ts",
+      "default": "./browser.js"
+    },
+    "./browser.js": {
+      "types": "./browser.d.ts",
+      "default": "./browser.js"
+    }
   },
   "bin": {
     "fixts": "./cli.js"
@@ -64,6 +74,7 @@
   },
   "dependencies": {
     "exifreader": "^4.32.0",
-    "music-metadata": "^11.9.0"
+    "music-metadata": "^11.9.0",
+    "music-metadata-browser": "^2.5.10"
   }
 }

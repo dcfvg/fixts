@@ -12,7 +12,7 @@
  */
 
 import { parseTimestamp } from './timestampParser.js';
-import { parseTimestampFromEXIF, parseTimestampFromAudio } from './fileMetadataParser.js';
+import { parseTimestampFromEXIF, parseTimestampFromAudio } from './fileMetadataParser-browser.js';
 import { getBasename, getExtension } from './path-utils.js';
 
 /**
@@ -54,7 +54,8 @@ export async function extractTimestamp(filepath, options = {}) {
   } = options;
 
   // Handle File objects or filename strings
-  const isFileObject = filepath instanceof File;
+  // Guard File check for Node.js/SSR compatibility
+  const isFileObject = typeof File !== 'undefined' && filepath instanceof File;
   const basename = isFileObject ? filepath.name : getBasename(filepath);
   const ext = getExtension(basename).toLowerCase();
 
@@ -218,7 +219,7 @@ function isAudioFile(ext) {
 export async function extractTimestampBatch(filepaths, options = {}) {
   const results = await Promise.all(
     filepaths.map(async (filepath) => ({
-      filepath: filepath instanceof File ? filepath.name : filepath,
+      filepath: typeof File !== 'undefined' && filepath instanceof File ? filepath.name : filepath,
       result: await extractTimestamp(filepath, options)
     }))
   );

@@ -45,7 +45,7 @@ npm run test:local
 ### 4. **Test Actual Renaming (Not Just Detection)**
 Create test files and verify the ACTUAL RENAMED OUTPUT:
 ```bash
-mkdir /tmp/dating-manual-test && cd /tmp/dating-manual-test
+mkdir /tmp/fixts-manual-test && cd /tmp/fixts-manual-test
 
 # Test problematic patterns found in analysis
 touch "2022-05-22-11_10 - John Doe - DSC01470.jpg"
@@ -53,10 +53,10 @@ touch "montage-2024-11-03_14.30.00_1234567890123456789.jpg"
 touch "2024-11-03-22.30.00-late.txt"
 
 # DRY RUN - inspect output carefully
-dating . -d
+fixts . -d
 
 # EXECUTE - verify renamed files are correct
-dating . -e --no-interactive
+fixts . --execute
 
 # CHECK RESULTS
 ls -1
@@ -72,15 +72,15 @@ ls -1
 ### 5. **Edge Cases Manual Testing**
 ```bash
 # Ambiguous dates
-touch "photo-05-06-2023.jpg"  # Test with both --resolution dmy and mdy
+touch "photo-05-06-2023.jpg"  # Test with both --resolution dd-mm-yyyy and mm-dd-yyyy
 
 # Time crossing midnight
 touch "2024-11-03-22.30.00-late.txt"
-dating . --shift +2h -d  # Should become 2024-11-04 00.30.00
+fixts . --shift +2h -d  # Should become 2024-11-04 00.30.00
 
 # Metadata extraction
 touch "document.pdf" && touch -t 202311031430 "document.pdf"
-dating . -m earliest -d  # Should extract from creation time
+fixts . --use-metadata earliest -d  # Should extract from creation time
 
 # Special characters
 touch "file[0](v2)+edit.txt"  # All should be preserved
@@ -99,7 +99,7 @@ Check recent changes haven't broken:
 ### 7. **Performance Check**
 ```bash
 # Should complete in < 1 second for 1000 files
-time dating /path/to/large/directory -d --no-interactive
+time fixts /path/to/large/directory -d
 ```
 
 ---
