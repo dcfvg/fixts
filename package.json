@@ -33,6 +33,7 @@
     "test:all": "npm run lint && npm run test && npm run test:integration",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
+    "check": "npm run lint && npm run test && npm run test:integration",
     "verify": "npm run lint; LINT_CODE=$?; npm run test; TEST_CODE=$?; npm run test:integration; INT_CODE=$?; echo ''; echo '===== VERIFICATION SUMMARY ====='; [ $LINT_CODE -eq 0 ] && echo '✅ Lint: PASS' || echo '❌ Lint: FAIL'; [ $TEST_CODE -eq 0 ] && echo '✅ Unit Tests: PASS' || echo '❌ Unit Tests: FAIL'; [ $INT_CODE -eq 0 ] && echo '✅ Integration Tests: PASS' || echo '❌ Integration Tests: FAIL'; exit $(($LINT_CODE + $TEST_CODE + $INT_CODE))",
     "verify:quick": "npm run lint && npm run test",
     "prepublishOnly": "npm run test:all",

@@ -11,7 +11,7 @@
  */
 
 import { parseTimestampFromEXIF, parseTimestampFromAudio } from './fileMetadataParser.js';
-import { getBasename, getExtension } from './path-utils.js';
+import { basename, extname } from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
@@ -84,8 +84,8 @@ export async function extractTimestamp(filepath, options = {}) {
     : filepath;
 
   const results = [];
-  const basename = getBasename(normalizedPath);
-  const ext = getExtension(normalizedPath).toLowerCase();
+  const filename = basename(normalizedPath);
+  const ext = extname(normalizedPath).toLowerCase();
 
   // Try each source in priority order
   for (const source of sources) {
@@ -94,7 +94,7 @@ export async function extractTimestamp(filepath, options = {}) {
     try {
       switch (source) {
       case SOURCE_TYPE.FILENAME:
-        result = await extractFromFilename(basename, parsingOptions);
+        result = await extractFromFilename(filename, parsingOptions);
         break;
 
       case SOURCE_TYPE.EXIF:

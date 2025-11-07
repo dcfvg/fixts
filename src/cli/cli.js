@@ -15,6 +15,7 @@ import { generateNewName } from '../core/formatter.js';
 import { parseTimeShift, formatTimeShift } from '../utils/timeShift.js';
 import { promptConfirmation } from './prompts.js';
 import { executeMetadataWorkflow, promptMetadataFallback } from './metadataWorkflow.js';
+import { logger } from '../utils/logger.js';
 
 // Parse command line arguments
 function parseArgs(args) {
@@ -28,6 +29,8 @@ function parseArgs(args) {
     table: false, // show detailed table format
     wizard: false, // Non-interactive mode by default
     help: false,
+    verbose: false, // Enable debug logging
+    quiet: false, // Suppress all but errors
     timeShift: null, // Time shift in milliseconds
     ambiguityResolution: {}, // Preset ambiguity resolutions
     includeExt: [], // Include only these extensions/directories
@@ -44,6 +47,10 @@ function parseArgs(args) {
       options.help = true;
     } else if (arg === '--wizard' || arg === '-w') {
       options.wizard = true;
+    } else if (arg === '--verbose' || arg === '-v') {
+      options.verbose = true;
+    } else if (arg === '--quiet' || arg === '-q') {
+      options.quiet = true;
     } else if (arg === '--no-revert') {
       options.noRevert = true;
     } else if (arg === '--dry-run' || arg === '-d') {
@@ -60,9 +67,9 @@ function parseArgs(args) {
         const shiftStr = args[++i];
         options.timeShift = parseTimeShift(shiftStr);
         if (options.timeShift === null) {
-          console.error(`❌ Invalid time shift format: ${shiftStr}`);
-          console.error('   Use format like: +2h30m, -1d3h, +45m, -30s');
-          console.error('   Examples: +2h (add 2 hours), -1d (remove 1 day), +30m (add 30 minutes)');
+          logger.error(`❌ Invalid time shift format: ${shiftStr}`);
+          logger.error('   Use format like: +2h30m, -1d3h, +45m, -30s');
+          logger.error('   Examples: +2h (add 2 hours), -1d (remove 1 day), +30m (add 30 minutes)');
           process.exit(1);
         }
         // Force copy mode when using time shift (safety feature)
@@ -107,9 +114,9 @@ function parseArgs(args) {
         } else if (resolution === '1900s' || resolution === '1900' || resolution === '19xx') {
           options.ambiguityResolution.century = '1900s';
         } else {
-          console.error(`❌ Invalid resolution value: ${resolution}`);
-          console.error('   Valid values: dd-mm-yyyy, mm-dd-yyyy, 2000s, 1900s');
-          console.error('   Aliases: eu/european, us/american, 20xx, 19xx');
+          logger.error(`❌ Invalid resolution value: ${resolution}`);
+          logger.error('   Valid values: dd-mm-yyyy, mm-dd-yyyy, 2000s, 1900s');
+          logger.error('   Aliases: eu/european, us/american, 20xx, 19xx');
           process.exit(1);
         }
       }
@@ -131,8 +138,8 @@ function parseArgs(args) {
       if (i + 1 < args.length) {
         const depthValue = parseInt(args[++i], 10);
         if (isNaN(depthValue) || depthValue < 1) {
-          console.error(`❌ Invalid depth value: ${args[i]}`);
-          console.error('   Depth must be a positive integer (1 = root only, 2 = root + 1 level, etc.)');
+          logger.error(`❌ Invalid depth value: ${args[i]}`);
+          logger.error('   Depth must be a positive integer (1 = root only, 2 = root + 1 level, etc.)');
           process.exit(1);
         }
         options.depth = depthValue;
@@ -147,7 +154,7 @@ function parseArgs(args) {
 
 // Display help message
 function displayHelp() {
-  console.log(`
+  logger.info(`
 fixts - Normalize filenames and folders with timestamps
 
 Usage:
@@ -221,6 +228,8 @@ Options:
                          -d 3               Process root + 2 levels of subdirectories
   -w, --wizard         Enable wizard mode with prompts for ambiguities
   --no-revert          Skip revert script generation (faster for large batches)
+  -v, --verbose        Enable debug logging (show detailed processing information)
+  -q, --quiet          Suppress all output except errors
   -h, --help           Show this help message
 
 Note: Non-wizard mode is default. Use --wizard for prompts and fine-grained control.
@@ -312,13 +321,13 @@ function displayResultsTable(results, showSource = false, copyMode = false) {
     : `└─${'─'.repeat(maxOldName)}─┴─${'─'.repeat(maxNewName)}─┘`;
 
   // Header
-  console.log(topBorder);
+  logger.info(topBorder);
   if (showSource) {
-    console.log(`│ ${'Original File'.padEnd(maxOldName)} │ ${'Source'.padEnd(maxSource)} │ ${'New Name'.padEnd(maxNewName)} │`);
+    logger.info(`│ ${'Original File'.padEnd(maxOldName)} │ ${'Source'.padEnd(maxSource)} │ ${'New Name'.padEnd(maxNewName)} │`);
   } else {
-    console.log(`│ ${'Original File'.padEnd(maxOldName)} │ ${'New Name'.padEnd(maxNewName)} │`);
+    logger.info(`│ ${'Original File'.padEnd(maxOldName)} │ ${'New Name'.padEnd(maxNewName)} │`);
   }
-  console.log(separator);
+  logger.info(separator);
 
   // Rows
   results.forEach((item, index) => {
@@ -328,18 +337,18 @@ function displayResultsTable(results, showSource = false, copyMode = false) {
 
     if (showSource) {
       const source = truncate(item.source || 'timestamp', maxSource);
-      console.log(`│ ${oldName} │ ${source} │ ${newName} │`);
+      logger.info(`│ ${oldName} │ ${source} │ ${newName} │`);
     } else {
-      console.log(`│ ${oldName} │ ${newName} │`);
+      logger.info(`│ ${oldName} │ ${newName} │`);
     }
 
     // Add separator every 10 rows for readability (but not after last row)
     if ((index + 1) % 10 === 0 && index !== results.length - 1) {
-      console.log(separator);
+      logger.info(separator);
     }
   });
 
-  console.log(bottomBorder);
+  logger.info(bottomBorder);
 }
 
 /**
@@ -348,7 +357,7 @@ function displayResultsTable(results, showSource = false, copyMode = false) {
  * @param {Object} options - CLI options
  */
 async function interactiveWorkflow(targetPath, options) {
-  console.log('\n🔍 Step 1: Scanning directory...\n');
+  logger.info('\n🔍 Step 1: Scanning directory...\n');
 
   // Read all files from directory (excluding system files)
   const allFiles = readdirSync(targetPath)
@@ -356,74 +365,74 @@ async function interactiveWorkflow(targetPath, options) {
     .map(f => join(targetPath, f));
 
   if (allFiles.length === 0) {
-    console.log('No files found in directory.');
+    logger.info('No files found in directory.');
     return;
   }
 
-  console.log(`Found ${allFiles.length} files\n`);
+  logger.info(`Found ${allFiles.length} files\n`);
 
   // Step 2: Group files by pattern
-  console.log('📊 Step 2: Analyzing timestamp patterns...\n');
+  logger.info('📊 Step 2: Analyzing timestamp patterns...\n');
   const fileObjects = allFiles.map(f => ({ name: basename(f), path: f }));
   const groups = groupByPattern(fileObjects);
   const summary = createSummary(groups);
   displaySummary(summary);
 
   // Show details for each group
-  console.log('\n📋 Pattern Details:\n');
+  logger.info('\n📋 Pattern Details:\n');
   for (const [, group] of groups.entries()) {
     displayGroup(group, 3);
   }
 
   // Step 3: Handle ambiguous dates
   if (summary.hasAmbiguous) {
-    console.log('\n⚠️  Step 3: Resolving ambiguous dates...\n');
+    logger.info('\n⚠️  Step 3: Resolving ambiguous dates...\n');
 
     // Check if we have preset resolutions
     const hasPresetResolutions = options.ambiguityResolution &&
       (options.ambiguityResolution.dateFormat || options.ambiguityResolution.century);
 
     if (hasPresetResolutions) {
-      console.log('✓ Using preset ambiguity resolutions:');
+      logger.info('✓ Using preset ambiguity resolutions:');
       if (options.ambiguityResolution.dateFormat) {
-        console.log(`  - Date format: ${options.ambiguityResolution.dateFormat}`);
+        logger.info(`  - Date format: ${options.ambiguityResolution.dateFormat}`);
       }
       if (options.ambiguityResolution.century) {
-        console.log(`  - Two-digit years: ${options.ambiguityResolution.century}`);
+        logger.info(`  - Two-digit years: ${options.ambiguityResolution.century}`);
       }
-      console.log('');
+      logger.info('');
     } else if (options.wizard) {
-      console.log('Some files have ambiguous date formats (e.g., 01-12-2023 could be Jan 12 or Dec 1).');
-      console.log('The system will prompt you for clarification when processing these files.\n');
+      logger.info('Some files have ambiguous date formats (e.g., 01-12-2023 could be Jan 12 or Dec 1).');
+      logger.info('The system will prompt you for clarification when processing these files.\n');
 
       const continueAmbiguous = await promptConfirmation('Continue with ambiguity resolution?');
       if (!continueAmbiguous) {
-        console.log('Operation cancelled.');
+        logger.info('Operation cancelled.');
         return;
       }
     } else {
-      console.log('⚠️  Warning: Ambiguous dates detected but no resolution provided.');
-      console.log('   Use --resolution flags to specify how to handle ambiguous dates.');
-      console.log('   Examples: --resolution eu --resolution 2000s\n');
+      logger.info('⚠️  Warning: Ambiguous dates detected but no resolution provided.');
+      logger.info('   Use --resolution flags to specify how to handle ambiguous dates.');
+      logger.info('   Examples: --resolution eu --resolution 2000s\n');
     }
   }
 
   // Step 4: Handle files without timestamps
   if (summary.needsMetadata) {
-    console.log('\n📅 Step 4: Files without timestamps detected\n');
+    logger.info('\n📅 Step 4: Files without timestamps detected\n');
     const noTimestampGroup = groups.get('NO_TIMESTAMP');
     if (noTimestampGroup) {
-      console.log(`Found ${noTimestampGroup.count} file(s) without timestamps:`);
+      logger.info(`Found ${noTimestampGroup.count} file(s) without timestamps:`);
       displayGroup(noTimestampGroup, 5);
-      console.log('\nThese files will be renamed using metadata (EXIF, mtime, birthtime).');
-      console.log(`Metadata source: ${options.metadataSource || 'earliest'}\n`);
+      logger.info('\nThese files will be renamed using metadata (EXIF, mtime, birthtime).');
+      logger.info(`Metadata source: ${options.metadataSource || 'earliest'}\n`);
     }
   } else {
-    console.log('\n✅ Step 4: All files have timestamps in filename\n');
+    logger.info('\n✅ Step 4: All files have timestamps in filename\n');
   }
 
   // Step 5: Generate rename proposals and show summary
-  console.log('📝 Step 5: Generating rename proposals...\n');
+  logger.info('📝 Step 5: Generating rename proposals...\n');
 
   const renameProposals = [];
 
@@ -460,7 +469,7 @@ async function interactiveWorkflow(targetPath, options) {
   let metadataResults = [];
   let _metadataSkipped = [];
   if (filesWithoutTimestamps.length > 0 && options.useMetadata) {
-    console.log('Extracting metadata from files without timestamps...');
+    logger.info('Extracting metadata from files without timestamps...');
     const metadataRenameResult = await renameUsingMetadata(targetPath, {
       format: options.format,
       metadataSource: options.metadataSource,
@@ -473,7 +482,7 @@ async function interactiveWorkflow(targetPath, options) {
   }
 
   // Display summary by pattern
-  console.log('\n📊 Rename Summary by Pattern:\n');
+  logger.info('\n📊 Rename Summary by Pattern:\n');
 
   const byPattern = {};
   for (const proposal of renameProposals) {
@@ -486,42 +495,42 @@ async function interactiveWorkflow(targetPath, options) {
   for (const [, proposals] of Object.entries(byPattern)) {
     const patternInfo = detectPattern(proposals[0].oldName);
     const icon = patternInfo.hasTime ? '🕐' : patternInfo.hasDate ? '📅' : '❓';
-    console.log(`\n${icon} ${patternInfo.description} (${proposals.length} file${proposals.length > 1 ? 's' : ''})`);
-    console.log('─'.repeat(60));
+    logger.info(`\n${icon} ${patternInfo.description} (${proposals.length} file${proposals.length > 1 ? 's' : ''})`);
+    logger.info('─'.repeat(60));
 
     proposals.slice(0, 3).forEach(p => {
-      console.log(`  ${p.oldName}`);
-      console.log(`  → ${options.copy ? '_c/' : ''}${p.newName}\n`);
+      logger.info(`  ${p.oldName}`);
+      logger.info(`  → ${options.copy ? '_c/' : ''}${p.newName}\n`);
     });
 
     if (proposals.length > 3) {
-      console.log(`  ... and ${proposals.length - 3} more file(s)\n`);
+      logger.info(`  ... and ${proposals.length - 3} more file(s)\n`);
     }
   }
 
   if (metadataResults.length > 0) {
-    console.log('\n📅 Files renamed using metadata:');
-    console.log('─'.repeat(60));
+    logger.info('\n📅 Files renamed using metadata:');
+    logger.info('─'.repeat(60));
     metadataResults.slice(0, 3).forEach(r => {
-      console.log(`  ${r.oldName}`);
-      console.log(`  → ${options.copy ? '_c/' : ''}${r.newName} (${r.source})\n`);
+      logger.info(`  ${r.oldName}`);
+      logger.info(`  → ${options.copy ? '_c/' : ''}${r.newName} (${r.source})\n`);
     });
 
     if (metadataResults.length > 3) {
-      console.log(`  ... and ${metadataResults.length - 3} more file(s)\n`);
+      logger.info(`  ... and ${metadataResults.length - 3} more file(s)\n`);
     }
   }
 
   const totalChanges = renameProposals.length + metadataResults.length;
-  console.log(`\nTotal files to rename: ${totalChanges}`);
+  logger.info(`\nTotal files to rename: ${totalChanges}`);
 
   if (totalChanges === 0) {
-    console.log('\nNo changes needed. All files are already properly formatted.');
+    logger.info('\nNo changes needed. All files are already properly formatted.');
     return;
   }
 
   // Step 6: Final confirmation
-  console.log('\n✅ Step 6: Ready to execute\n');
+  logger.info('\n✅ Step 6: Ready to execute\n');
 
   let executeNow = true;
   if (options.wizard) {
@@ -529,12 +538,12 @@ async function interactiveWorkflow(targetPath, options) {
   }
 
   if (!executeNow) {
-    console.log('Operation cancelled. No files were renamed.');
+    logger.info('Operation cancelled. No files were renamed.');
     return;
   }
 
   // Execute renaming
-  console.log('\n🚀 Executing renaming...\n');
+  logger.info('\n🚀 Executing renaming...\n');
 
   // Rename files with timestamps
   if (renameProposals.length > 0) {
@@ -555,15 +564,15 @@ async function interactiveWorkflow(targetPath, options) {
     const successful = result.results.filter((r) => !r.error).length;
     const failed = result.results.filter((r) => r.error).length;
 
-    console.log(`\n✅ Successfully renamed ${successful} file(s)`);
+    logger.info(`\n✅ Successfully renamed ${successful} file(s)`);
     if (failed > 0) {
-      console.log(`❌ Failed to rename ${failed} file(s)`);
+      logger.info(`❌ Failed to rename ${failed} file(s)`);
     }
 
     // Show revert script info
     if (result.revertScriptPath && !options.copy) {
-      console.log(`\n💾 Revert script created: ${result.revertScriptPath}`);
-      console.log('   Run this script to undo the renaming while preserving timestamps');
+      logger.info(`\n💾 Revert script created: ${result.revertScriptPath}`);
+      logger.info('   Run this script to undo the renaming while preserving timestamps');
     }
   }
 
@@ -581,18 +590,26 @@ async function interactiveWorkflow(targetPath, options) {
     const successful = metadataRenameResult.results.filter(r => !r.error).length;
     const failed = metadataRenameResult.results.filter(r => r.error).length;
 
-    console.log(`✅ Successfully renamed ${successful} file(s) using metadata`);
+    logger.info(`✅ Successfully renamed ${successful} file(s) using metadata`);
     if (failed > 0) {
-      console.log(`❌ Failed to rename ${failed} file(s)`);
+      logger.info(`❌ Failed to rename ${failed} file(s)`);
     }
   }
 
-  console.log('\n✨ Interactive workflow completed!\n');
+  logger.info('\n✨ Interactive workflow completed!\n');
 }
 
 // Main function
 async function main() {
   const options = parseArgs(process.argv);
+
+  // Configure logger for CLI mode
+  logger.enableCliMode();
+  if (options.verbose) {
+    logger.setVerbose(true);
+  } else if (options.quiet) {
+    logger.setQuiet(true);
+  }
 
   if (options.help) {
     displayHelp();
@@ -600,15 +617,15 @@ async function main() {
   }
 
   if (!options.path) {
-    console.error('Error: Path argument is required');
-    console.log('Run "fixts --help" for usage information');
+    logger.error('Error: Path argument is required');
+    logger.info('Run "fixts --help" for usage information');
     process.exit(1);
   }
 
   const targetPath = resolve(options.path);
 
   if (!existsSync(targetPath)) {
-    console.error(`Error: Path does not exist: ${targetPath}`);
+    logger.error(`Error: Path does not exist: ${targetPath}`);
     process.exit(1);
   }
 
@@ -618,7 +635,7 @@ async function main() {
   // Handle interactive mode
   if (options.wizard) {
     if (!isDirectory) {
-      console.error('Error: --interactive mode requires a directory');
+      logger.error('Error: --interactive mode requires a directory');
       process.exit(1);
     }
 
@@ -626,16 +643,16 @@ async function main() {
     process.exit(0);
   }
 
-  console.log(`\nProcessing: ${basename(targetPath)}`);
-  console.log(`Mode: ${options.dryRun ? 'DRY RUN' : 'EXECUTE'}${options.copy ? ' (COPY)' : ''}`);
-  console.log(`Format: ${options.format}`);
+  logger.info(`\nProcessing: ${basename(targetPath)}`);
+  logger.info(`Mode: ${options.dryRun ? 'DRY RUN' : 'EXECUTE'}${options.copy ? ' (COPY)' : ''}`);
+  logger.info(`Format: ${options.format}`);
   if (options.timeShift) {
-    console.log(`⏱️  Time Shift: ${formatTimeShift(options.timeShift)}`);
+    logger.info(`⏱️  Time Shift: ${formatTimeShift(options.timeShift)}`);
     if (options.dryRun) {
-      console.log('    (Preview mode - shows what timestamps will become after shift)');
+      logger.info('    (Preview mode - shows what timestamps will become after shift)');
     }
   }
-  console.log('');
+  logger.info('');
 
   try {
     const result = await renameFiles(targetPath, {
@@ -657,7 +674,7 @@ async function main() {
 
     // Check if no timestamps found at all
     if (noTimestamp) {
-      console.log('No files or folders with timestamps found.');
+      logger.info('No files or folders with timestamps found.');
 
       // Propose to use metadata
       if (!options.useMetadata && !options.dryRun) {
@@ -693,11 +710,11 @@ async function main() {
 
     // Check if all files are already formatted
     if (results.length === 0 && alreadyFormatted > 0) {
-      console.log(`✓ All ${alreadyFormatted} file(s) and folder(s) are already in the correct format.`);
+      logger.info(`✓ All ${alreadyFormatted} file(s) and folder(s) are already in the correct format.`);
 
       // Inform about files without timestamps
       if (withoutTimestamp > 0) {
-        console.log(`\nℹ️  Found ${withoutTimestamp} file(s) without timestamps in their names.`);
+        logger.info(`\nℹ️  Found ${withoutTimestamp} file(s) without timestamps in their names.`);
 
         // If user explicitly requested metadata scanning, process files without timestamps
         if (options.useMetadata) {
@@ -712,7 +729,7 @@ async function main() {
           process.exit(result.success ? 0 : 1);
         } else {
           // Offer to scan metadata
-          console.log('💡 Tip: Use --use-metadata to extract dates from file metadata (EXIF, modification time, etc.)');
+          logger.info('💡 Tip: Use --use-metadata to extract dates from file metadata (EXIF, modification time, etc.)');
         }
       }
 
@@ -720,11 +737,11 @@ async function main() {
     }
 
     // Display changes
-    console.log(`Found ${results.length} item(s) to rename:`);
+    logger.info(`Found ${results.length} item(s) to rename:`);
     if (alreadyFormatted > 0) {
-      console.log(`(${alreadyFormatted} already in correct format)\n`);
+      logger.info(`(${alreadyFormatted} already in correct format)\n`);
     } else {
-      console.log('');
+      logger.info('');
     }
 
     // Display in table format if --table, otherwise traditional format
@@ -737,25 +754,25 @@ async function main() {
       }
 
       if (errorResults.length > 0) {
-        console.log('\n❌ Errors:');
+        logger.info('\n❌ Errors:');
         errorResults.forEach((item) => {
-          console.log(`✗ ${item.oldName} - ERROR: ${item.error}`);
+          logger.info(`✗ ${item.oldName} - ERROR: ${item.error}`);
         });
       }
     } else {
       results.forEach((item) => {
         if (item.error) {
-          console.log(`✗ ${item.oldName} - ERROR: ${item.error}`);
+          logger.info(`✗ ${item.oldName} - ERROR: ${item.error}`);
         } else {
-          console.log(`  ${item.oldName}`);
-          console.log(`→ ${options.copy ? '_c/' : ''}${item.newName}\n`);
+          logger.info(`  ${item.oldName}`);
+          logger.info(`→ ${options.copy ? '_c/' : ''}${item.newName}\n`);
         }
       });
     }
 
     // Display skipped ambiguous files if any
     if (skippedAmbiguous && skippedAmbiguous.length > 0) {
-      console.log(`\n⚠️  Skipped ${skippedAmbiguous.length} file(s) with ambiguous dates:\n`);
+      logger.info(`\n⚠️  Skipped ${skippedAmbiguous.length} file(s) with ambiguous dates:\n`);
 
       // Group by ambiguity type for clearer display
       const byType = {};
@@ -773,24 +790,24 @@ async function main() {
           ? 'Use --resolution dd-mm-yyyy (DD-MM-YYYY) or --resolution mm-dd-yyyy (MM-DD-YYYY)'
           : 'Use --resolution 2000s or --resolution 1900s';
 
-        console.log(`  ${type === 'day-month-order' ? 'Day-Month ambiguity' : 'Two-digit year ambiguity'}: ${items.length} file(s)`);
-        console.log(`  ${resolutionHint}`);
+        logger.info(`  ${type === 'day-month-order' ? 'Day-Month ambiguity' : 'Two-digit year ambiguity'}: ${items.length} file(s)`);
+        logger.info(`  ${resolutionHint}`);
 
         items.slice(0, 3).forEach(item => {
           // Show smart suggestion if available
           if (item.smart && item.smart.confidence && item.smart.suggestion) {
             const confidenceIcon = item.smart.confidence >= 70 ? '🟢' : item.smart.confidence >= 50 ? '🟡' : '🔴';
-            console.log(`    ${confidenceIcon} ${item.name} (${item.smart.confidence}% confidence)`);
-            console.log(`       💡 ${item.smart.suggestion}`);
+            logger.info(`    ${confidenceIcon} ${item.name} (${item.smart.confidence}% confidence)`);
+            logger.info(`       💡 ${item.smart.suggestion}`);
           } else {
-            console.log(`    - ${item.name}`);
+            logger.info(`    - ${item.name}`);
           }
         });
 
         if (items.length > 3) {
-          console.log(`    ... and ${items.length - 3} more`);
+          logger.info(`    ... and ${items.length - 3} more`);
         }
-        console.log('');
+        logger.info('');
       }
     }
 
@@ -798,7 +815,7 @@ async function main() {
     if (options.dryRun) {
       // Process files without timestamps if --use-metadata is enabled (preview only)
       if (options.useMetadata && withoutTimestamp > 0) {
-        console.log(`\n📅 Processing ${withoutTimestamp} file(s) without timestamps using metadata...`);
+        logger.info(`\n📅 Processing ${withoutTimestamp} file(s) without timestamps using metadata...`);
         const metadataResult = await executeMetadataWorkflow(targetPath, {
           format: options.format,
           metadataSource: options.metadataSource,
@@ -809,64 +826,64 @@ async function main() {
         });
 
         if (metadataResult.results && metadataResult.results.length > 0) {
-          console.log(`\n✓ Found ${metadataResult.results.length} file(s) that can be renamed using metadata\n`);
+          logger.info(`\n✓ Found ${metadataResult.results.length} file(s) that can be renamed using metadata\n`);
         }
       }
 
-      console.log('\n' + '─'.repeat(60));
-      console.log('📋 SUMMARY');
-      console.log('─'.repeat(60));
-      console.log(`  ✅ Files to rename: ${results.length}`);
+      logger.info('\n' + '─'.repeat(60));
+      logger.info('📋 SUMMARY');
+      logger.info('─'.repeat(60));
+      logger.info(`  ✅ Files to rename: ${results.length}`);
       if (alreadyFormatted > 0) {
-        console.log(`  ✓  Already formatted: ${alreadyFormatted}`);
+        logger.info(`  ✓  Already formatted: ${alreadyFormatted}`);
       }
       if (smartStats && smartStats.autoResolved > 0) {
-        console.log(`  🤖 Auto-resolved (smart): ${smartStats.autoResolved}`);
+        logger.info(`  🤖 Auto-resolved (smart): ${smartStats.autoResolved}`);
       }
       if (skippedAmbiguous && skippedAmbiguous.length > 0) {
-        console.log(`  ⚠️  Skipped (ambiguous): ${skippedAmbiguous.length}`);
+        logger.info(`  ⚠️  Skipped (ambiguous): ${skippedAmbiguous.length}`);
       }
       if (withoutTimestamp > 0) {
-        console.log(`  ℹ️  Without timestamps: ${withoutTimestamp}`);
+        logger.info(`  ℹ️  Without timestamps: ${withoutTimestamp}`);
       }
 
       // Next steps section
       if ((skippedAmbiguous && skippedAmbiguous.length > 0) || withoutTimestamp > 0 || results.length > 0) {
-        console.log('\n' + '─'.repeat(60));
-        console.log('🚀 NEXT STEPS');
-        console.log('─'.repeat(60));
+        logger.info('\n' + '─'.repeat(60));
+        logger.info('🚀 NEXT STEPS');
+        logger.info('─'.repeat(60));
 
         if (results.length > 0) {
-          console.log('  To apply these changes:');
-          console.log(`    fixts "${basename(targetPath)}" --execute`);
-          console.log('');
+          logger.info('  To apply these changes:');
+          logger.info(`    fixts "${basename(targetPath)}" --execute`);
+          logger.info('');
         }
 
         if (skippedAmbiguous && skippedAmbiguous.length > 0) {
           const hasDayMonth = skippedAmbiguous.some(item => item.ambiguity.type === 'day-month-order');
           const hasYear = skippedAmbiguous.some(item => item.ambiguity.type === 'two-digit-year');
 
-          console.log('  To process ambiguous files:');
+          logger.info('  To process ambiguous files:');
           if (hasDayMonth) {
-            console.log(`    fixts "${basename(targetPath)}" --resolution dd-mm-yyyy --execute  # For DD-MM-YYYY`);
-            console.log(`    fixts "${basename(targetPath)}" --resolution mm-dd-yyyy --execute  # For MM-DD-YYYY`);
+            logger.info(`    fixts "${basename(targetPath)}" --resolution dd-mm-yyyy --execute  # For DD-MM-YYYY`);
+            logger.info(`    fixts "${basename(targetPath)}" --resolution mm-dd-yyyy --execute  # For MM-DD-YYYY`);
           }
           if (hasYear) {
-            console.log(`    fixts "${basename(targetPath)}" --resolution 2000s --execute`);
-            console.log(`    fixts "${basename(targetPath)}" --resolution 1900s --execute`);
+            logger.info(`    fixts "${basename(targetPath)}" --resolution 2000s --execute`);
+            logger.info(`    fixts "${basename(targetPath)}" --resolution 1900s --execute`);
           }
-          console.log('  Or use interactive mode:');
-          console.log(`    fixts "${basename(targetPath)}" --wizard --execute`);
-          console.log('');
+          logger.info('  Or use interactive mode:');
+          logger.info(`    fixts "${basename(targetPath)}" --wizard --execute`);
+          logger.info('');
         }
 
         if (withoutTimestamp > 0 && !options.useMetadata) {
-          console.log('  To process files without timestamps (using metadata):');
-          console.log(`    fixts "${basename(targetPath)}" --use-metadata --execute`);
-          console.log('');
+          logger.info('  To process files without timestamps (using metadata):');
+          logger.info(`    fixts "${basename(targetPath)}" --use-metadata --execute`);
+          logger.info('');
         }
 
-        console.log('─'.repeat(60));
+        logger.info('─'.repeat(60));
       }
 
       process.exit(0);
@@ -883,11 +900,11 @@ async function main() {
       );
     } else if (!isInteractive) {
       // In non-interactive environments (CI, tests, pipes), auto-confirm
-      console.log('Non-interactive mode detected - applying changes automatically');
+      logger.info('Non-interactive mode detected - applying changes automatically');
     }
 
     if (!confirmed) {
-      console.log('Operation cancelled.');
+      logger.info('Operation cancelled.');
       process.exit(0);
     }
 
@@ -914,20 +931,20 @@ async function main() {
     const successful = applyResults.filter((r) => r.success && !r.error).length;
     const failed = applyResults.filter((r) => r.error).length;
 
-    console.log(`\n✓ Successfully ${options.copy ? 'copied' : 'renamed'} ${successful} item(s)`);
+    logger.info(`\n✓ Successfully ${options.copy ? 'copied' : 'renamed'} ${successful} item(s)`);
     if (failed > 0) {
-      console.log(`✗ Failed: ${failed} item(s)`);
+      logger.info(`✗ Failed: ${failed} item(s)`);
     }
 
     // Show revert script info
     if (revertScriptPath && !options.copy) {
-      console.log(`\n💾 Revert script created: ${revertScriptPath}`);
-      console.log('   Run this script to undo the renaming while preserving timestamps');
+      logger.info(`\n💾 Revert script created: ${revertScriptPath}`);
+      logger.info('   Run this script to undo the renaming while preserving timestamps');
     }
 
     // Process files without timestamps if --use-metadata is enabled
     if (options.useMetadata && withoutTimestamp > 0) {
-      console.log(`\n📅 Processing ${withoutTimestamp} file(s) without timestamps using metadata...`);
+      logger.info(`\n📅 Processing ${withoutTimestamp} file(s) without timestamps using metadata...`);
       const metadataResult = await executeMetadataWorkflow(targetPath, {
         format: options.format,
         metadataSource: options.metadataSource,
@@ -938,11 +955,11 @@ async function main() {
       });
 
       if (metadataResult.success) {
-        console.log('✓ Metadata processing completed');
+        logger.info('✓ Metadata processing completed');
       }
     }
   } catch (error) {
-    console.error(`Error: ${error.message}`);
+    logger.error(`Error: ${error.message}`);
     process.exit(1);
   }
 }

@@ -20,7 +20,8 @@ export const LogLevel = {
 const config = {
   level: (typeof process !== 'undefined' && process.env?.LOG_LEVEL) || LogLevel.INFO,
   silent: (typeof process !== 'undefined' && process.env?.NODE_ENV === 'test') || false,
-  timestamp: true
+  timestamp: false, // Default to false for cleaner CLI output
+  cliMode: false     // Enable CLI-friendly output (no timestamps, no level prefix)
 };
 
 /**
@@ -46,6 +47,15 @@ function shouldLog(level) {
  * @returns {string} - Formatted message
  */
 function formatMessage(level, message, context) {
+  // CLI mode: simple output without timestamps or level prefix
+  if (config.cliMode) {
+    if (context !== undefined) {
+      return `${message} ${JSON.stringify(context, null, 2)}`;
+    }
+    return message;
+  }
+
+  // Standard mode: include timestamps and level
   const parts = [];
 
   if (config.timestamp) {
@@ -116,8 +126,39 @@ export const logger = {
    * @param {string} options.level - Log level
    * @param {boolean} options.silent - Silent mode
    * @param {boolean} options.timestamp - Include timestamp
+   * @param {boolean} options.cliMode - Enable CLI-friendly output
    */
   configure(options) {
     Object.assign(config, options);
+  },
+
+  /**
+   * Set verbosity for CLI usage
+   * @param {boolean} verbose - Enable debug logging
+   */
+  setVerbose(verbose) {
+    if (verbose) {
+      config.level = LogLevel.DEBUG;
+      config.cliMode = true;
+    }
+  },
+
+  /**
+   * Set quiet mode for CLI usage
+   * @param {boolean} quiet - Suppress all output except errors
+   */
+  setQuiet(quiet) {
+    if (quiet) {
+      config.level = LogLevel.ERROR;
+      config.cliMode = true;
+    }
+  },
+
+  /**
+   * Enable CLI mode (no timestamps, clean output)
+   */
+  enableCliMode() {
+    config.cliMode = true;
+    config.timestamp = false;
   }
 };

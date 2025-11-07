@@ -8,7 +8,7 @@
 
 import ExifReader from 'exifreader';
 import { parseBlob, parseFile as parseAudioFile } from 'music-metadata';
-import { parseEXIFDateTime } from './dateUtils.js';
+import { extractDateFromEXIFTags, extractDateFromAudioMetadata } from './metadataParsers-core.js';
 import { logger } from './logger.js';
 
 /**
@@ -48,42 +48,8 @@ async function parseTimestampFromEXIF(file) {
       return null;
     }
 
-    // Priority order: DateTimeOriginal > DateTimeDigitized > DateTime
-    // DateTimeOriginal = when the photo was taken (most reliable)
-    // DateTimeDigitized = when the photo was digitized/scanned
-    // DateTime = when the file was last modified
-
-    const exifTags = tags.exif || {};
-
-    // Try DateTimeOriginal first (0x9003)
-    if (exifTags.DateTimeOriginal && exifTags.DateTimeOriginal.description) {
-      const date = parseEXIFDateTime(exifTags.DateTimeOriginal.description);
-      if (date) return date;
-    }
-
-    // Try DateTimeDigitized (0x9004)
-    if (exifTags.DateTimeDigitized && exifTags.DateTimeDigitized.description) {
-      const date = parseEXIFDateTime(exifTags.DateTimeDigitized.description);
-      if (date) return date;
-    }
-
-    // Try DateTime (0x0132)
-    if (exifTags.DateTime && exifTags.DateTime.description) {
-      const date = parseEXIFDateTime(exifTags.DateTime.description);
-      if (date) return date;
-    }
-
-    // Fallback: try non-expanded tags
-    if (tags.DateTimeOriginal && tags.DateTimeOriginal.description) {
-      const date = parseEXIFDateTime(tags.DateTimeOriginal.description);
-      if (date) return date;
-    }
-
-    if (tags.DateTime && tags.DateTime.description) {
-      const date = parseEXIFDateTime(tags.DateTime.description);
-      if (date) return date;
-    }
-
+    // Use core logic to extract date
+    return extractDateFromEXIFTags(tags);
   } catch (error) {
     // ExifReader throws for non-EXIF files, which is expected
     logger.debug('No EXIF data found:', { error: error.message });
@@ -127,34 +93,10 @@ async function parseTimestampFromAudio(file) {
       return null;
     }
 
-    // Priority 1: Recording date from tags (most reliable)
-    // common.date format: 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:MM:SS'
-    if (metadata.common.date) {
-      const date = new Date(metadata.common.date);
-      if (!isNaN(date.getTime())) {
-        return date;
-      }
-    }
-
-    // Priority 2: File creation time (when recorded/encoded)
-    if (metadata.format.creationTime) {
-      return metadata.format.creationTime;
-    }
-
-    // Priority 3: Modification time (last updated)
-    if (metadata.format.modificationTime) {
-      return metadata.format.modificationTime;
-    }
-
-    // Priority 4: Parse from year tag if available
-    if (metadata.common.year) {
-      // Return Jan 1 of that year as fallback
-      return new Date(metadata.common.year, 0, 1);
-    }
-
+    // Use core logic to extract date
+    return extractDateFromAudioMetadata(metadata);
   } catch (error) {
-    // music-metadata throws for non-audio files, which is expected
-    logger.debug('No audio metadata found:', { error: error.message });
+    logger.debug('Audio metadata error:', { error: error.message });
   }
 
   return null;
@@ -163,13 +105,11 @@ async function parseTimestampFromAudio(file) {
 const api = {
   parseTimestampFromEXIF,
   parseTimestampFromAudio,
-  parseEXIFDateTime, // re-exported from dateUtils
 };
 
 export {
   parseTimestampFromEXIF,
   parseTimestampFromAudio,
-  parseEXIFDateTime, // re-exported from dateUtils
 };
 
 export default api;
