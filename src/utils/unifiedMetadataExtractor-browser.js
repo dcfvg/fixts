@@ -18,6 +18,7 @@ import { parseTimestamp } from './timestampParser.js';
 import { parseTimestampFromEXIF, parseTimestampFromAudio } from './fileMetadataParser-browser.js';
 import { getBasename, getExtension } from './path-utils.js';
 import { CONFIDENCE } from '../config/constants.js';
+import { logger } from './logger.js';
 
 /**
  * Timestamp source types (browser-safe subset)
@@ -104,8 +105,9 @@ export async function extractTimestamp(filepath, options = {}) {
           return results[0];
         }
       }
-    } catch {
-      // Skip sources that error
+    } catch (error) {
+      // Skip sources that error but log for debugging
+      logger.debug(`Error extracting from ${source}:`, { filepath, error: error.message });
       continue;
     }
   }

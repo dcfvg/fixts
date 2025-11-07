@@ -28,7 +28,9 @@ fixts (fix timestamps) scans your files and folders, detects various timestamp f
 - 🎯 **File Filtering** - Process only specific file types
 - 📸 **Metadata Extraction** - Extract dates from EXIF, creation time, etc.
 - 🧙 **Wizard Mode** - Interactive disambiguation for edge cases
-- ↩️ **Revert Script** - Undo operations with generated scripts
+- ⚙️ **Config File Support** - Save preferences in `.fixtsrc` files
+- ↩️ **Undo Command** - One-command revert with `--undo`
+- 🔄 **Revert Scripts** - Auto-generated bash scripts to undo operations
 - 🌐 **Browser Support** - Use in web apps via `fixts/browser` entry point
 
 ---
@@ -148,6 +150,61 @@ fixts ./files --resolution mm-dd-yyyy --execute
 # For 2-digit years
 fixts ./old-photos --resolution 2000s --execute
 ```
+
+### Configuration files
+
+Save your preferred settings in a `.fixtsrc` file:
+
+```bash
+# Create a config file in your project
+cat > .fixtsrc << EOF
+{
+  "format": "yyyy-mm-dd hh.MM.ss",
+  "resolution": {
+    "dateFormat": "dd-mm-yyyy",
+    "century": "2000s"
+  },
+  "excludeExt": ["tmp", "cache"],
+  "verbose": false
+}
+EOF
+
+# Use default config (auto-detected)
+fixts ./photos --execute
+
+# Use custom config file
+fixts ./photos --config ./my-config.json --execute
+```
+
+**Config file locations** (searched in order):
+1. Path specified with `--config`
+2. `.fixtsrc` or `.fixtsrc.json` (current directory)
+3. `~/.fixtsrc` (user home directory)
+4. `~/.config/fixts/config.json` (XDG config directory)
+
+**Config options**: All CLI flags can be set in config files. CLI arguments override config file settings.
+
+See [.fixtsrc.example](./.fixtsrc.example) for a complete example.
+
+### Undo operations
+
+Easily undo the last renaming operation:
+
+```bash
+# Rename files
+fixts ./photos --execute
+
+# Oops, made a mistake! Undo it
+fixts ./photos --undo
+
+# Files are restored with timestamps preserved
+```
+
+The `--undo` command:
+- Automatically finds and executes the `revert.sh` script
+- Prompts for confirmation before restoring
+- Preserves file timestamps during restoration
+- Works with both renamed and copied files
 
 ---
 

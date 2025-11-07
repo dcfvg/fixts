@@ -1,0 +1,20 @@
+{
+  "format": "yyyy-mm-dd hh.MM.ss",
+  "dryRun": true,
+  "useMetadata": false,
+  "metadataSource": "content",
+  "resolution": {
+    "dateFormat": "dd-mm-yyyy",
+    "century": "2000s"
+  },
+  "excludeExt": ["tmp", "cache"],
+  "includeExt": [],
+  "depth": null,
+  "copy": false,
+  "table": false,
+  "wizard": false,
+  "verbose": false,
+  "quiet": false,
+  "noRevert": false,
+  "copyFlat": false
+}

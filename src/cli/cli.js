@@ -12,7 +12,7 @@
  * FileSystemAdapter pattern available in ../adapters/ for future platform extensions.
  */
 
-import { resolve, basename } from 'path';
+import { resolve, basename, dirname } from 'path';
 import { existsSync, statSync, readdirSync } from 'fs';
 import { join } from 'path';
 import { rename as renameFiles, renameUsingMetadata } from '../core/renamer.js';
@@ -22,11 +22,14 @@ import { parseTimeShift, formatTimeShift } from '../utils/timeShift.js';
 import { promptConfirmation } from './prompts.js';
 import { executeMetadataWorkflow, promptMetadataFallback } from './metadataWorkflow.js';
 import { logger } from '../utils/logger.js';
+import { loadConfig, mergeConfig, validateConfig } from '../config/configLoader.js';
 
 // Parse command line arguments
 function parseArgs(args) {
-  const options = {
+  const cliArgs = {
     path: null,
+    configPath: null, // Custom config file path
+    undo: false, // Execute revert script
     dryRun: true, // dry-run by default
     copy: false,
     format: 'yyyy-mm-dd hh.MM.ss', // default format
@@ -50,39 +53,48 @@ function parseArgs(args) {
     const arg = args[i];
 
     if (arg === '--help' || arg === '-h') {
-      options.help = true;
+      cliArgs.help = true;
+    } else if (arg === '--undo') {
+      cliArgs.undo = true;
+    } else if (arg === '--config') {
+      if (i + 1 < args.length) {
+        cliArgs.configPath = args[++i];
+      } else {
+        logger.error('❌ --config requires a file path');
+        process.exit(1);
+      }
     } else if (arg === '--wizard' || arg === '-w') {
-      options.wizard = true;
+      cliArgs.wizard = true;
     } else if (arg === '--verbose' || arg === '-v') {
-      options.verbose = true;
+      cliArgs.verbose = true;
     } else if (arg === '--quiet' || arg === '-q') {
-      options.quiet = true;
+      cliArgs.quiet = true;
     } else if (arg === '--no-revert') {
-      options.noRevert = true;
+      cliArgs.noRevert = true;
     } else if (arg === '--dry-run' || arg === '-d') {
-      options.dryRun = true;
+      cliArgs.dryRun = true;
     } else if (arg === '--execute' || arg === '-e') {
-      options.dryRun = false;
+      cliArgs.dryRun = false;
     } else if (arg === '--copy' || arg === '-c') {
-      options.copy = true;
+      cliArgs.copy = true;
     } else if (arg === '--copy-flat') {
-      options.copy = true;
-      options.copyFlat = true;
+      cliArgs.copy = true;
+      cliArgs.copyFlat = true;
     } else if (arg === '--shift' || arg === '--delay') {
       if (i + 1 < args.length) {
         const shiftStr = args[++i];
-        options.timeShift = parseTimeShift(shiftStr);
-        if (options.timeShift === null) {
+        cliArgs.timeShift = parseTimeShift(shiftStr);
+        if (cliArgs.timeShift === null) {
           logger.error(`❌ Invalid time shift format: ${shiftStr}`);
           logger.error('   Use format like: +2h30m, -1d3h, +45m, -30s');
           logger.error('   Examples: +2h (add 2 hours), -1d (remove 1 day), +30m (add 30 minutes)');
           process.exit(1);
         }
         // Force copy mode when using time shift (safety feature)
-        options.copy = true;
+        cliArgs.copy = true;
       }
     } else if (arg === '--use-metadata' || arg === '-m') {
-      options.useMetadata = true;
+      cliArgs.useMetadata = true;
       // Check if next arg is a metadata source (not a flag or path)
       if (i + 1 < args.length) {
         const nextArg = args[i + 1];
@@ -93,32 +105,32 @@ function parseArgs(args) {
           i++; // consume the source argument
           // Normalize aliases
           if (lowerNext === 'exif') {
-            options.metadataSource = 'content';
+            cliArgs.metadataSource = 'content';
           } else if (lowerNext === 'creation') {
-            options.metadataSource = 'birthtime';
+            cliArgs.metadataSource = 'birthtime';
           } else {
-            options.metadataSource = lowerNext;
+            cliArgs.metadataSource = lowerNext;
           }
         }
       }
     } else if (arg === '--table' || arg === '-t') {
-      options.table = true;
+      cliArgs.table = true;
     } else if (arg === '--format' || arg === '-f') {
       if (i + 1 < args.length) {
-        options.format = args[++i];
+        cliArgs.format = args[++i];
       }
     } else if (arg === '--resolution' || arg === '-r') {
       if (i + 1 < args.length) {
         const resolution = args[++i].toLowerCase();
         // Parse resolution values
         if (resolution === 'dd-mm-yyyy' || resolution === 'eu' || resolution === 'european') {
-          options.ambiguityResolution.dateFormat = 'dd-mm-yyyy';
+          cliArgs.ambiguityResolution.dateFormat = 'dd-mm-yyyy';
         } else if (resolution === 'mm-dd-yyyy' || resolution === 'us' || resolution === 'american') {
-          options.ambiguityResolution.dateFormat = 'mm-dd-yyyy';
+          cliArgs.ambiguityResolution.dateFormat = 'mm-dd-yyyy';
         } else if (resolution === '2000s' || resolution === '2000' || resolution === '20xx') {
-          options.ambiguityResolution.century = '2000s';
+          cliArgs.ambiguityResolution.century = '2000s';
         } else if (resolution === '1900s' || resolution === '1900' || resolution === '19xx') {
-          options.ambiguityResolution.century = '1900s';
+          cliArgs.ambiguityResolution.century = '1900s';
         } else {
           logger.error(`❌ Invalid resolution value: ${resolution}`);
           logger.error('   Valid values: dd-mm-yyyy, mm-dd-yyyy, 2000s, 1900s');
@@ -131,14 +143,14 @@ function parseArgs(args) {
       while (i + 1 < args.length && !args[i + 1].startsWith('-')) {
         const value = args[++i];
         // If value has a dot, it's an extension (remove dot); otherwise it's a directory name
-        options.includeExt.push(value.startsWith('.') ? value.slice(1).toLowerCase() : value);
+        cliArgs.includeExt.push(value.startsWith('.') ? value.slice(1).toLowerCase() : value);
       }
     } else if (arg === '--exclude-ext' || arg === '-x') {
       // Collect all following non-flag arguments as extensions/directories
       while (i + 1 < args.length && !args[i + 1].startsWith('-')) {
         const value = args[++i];
         // If value has a dot, it's an extension (remove dot); otherwise it's a directory name
-        options.excludeExt.push(value.startsWith('.') ? value.slice(1).toLowerCase() : value);
+        cliArgs.excludeExt.push(value.startsWith('.') ? value.slice(1).toLowerCase() : value);
       }
     } else if (arg === '--depth') {
       if (i + 1 < args.length) {
@@ -148,14 +160,14 @@ function parseArgs(args) {
           logger.error('   Depth must be a positive integer (1 = root only, 2 = root + 1 level, etc.)');
           process.exit(1);
         }
-        options.depth = depthValue;
+        cliArgs.depth = depthValue;
       }
-    } else if (!options.path) {
-      options.path = arg;
+    } else if (!cliArgs.path) {
+      cliArgs.path = arg;
     }
   }
 
-  return options;
+  return cliArgs;
 }
 
 // Display help message
@@ -170,6 +182,13 @@ Arguments:
   <path>                Path to file or directory to process
 
 Options:
+  --config <path>      Load configuration from specified file
+                       If not specified, searches for:
+                       • .fixtsrc, .fixtsrc.json (current directory)
+                       • ~/.fixtsrc, ~/.config/fixts/config.json (user directory)
+  --undo               Undo the last renaming operation by executing revert.sh
+                       Looks for revert.sh in the target directory
+                       Restores original filenames with timestamps preserved
   --dry-run            Show changes without applying them (default)
   -e, --execute        Execute the renaming (requires confirmation)
   -c, --copy           Copy files/folders to '_c' directory instead of renaming
@@ -607,7 +626,36 @@ async function interactiveWorkflow(targetPath, options) {
 
 // Main function
 async function main() {
-  const options = parseArgs(process.argv);
+  const cliArgs = parseArgs(process.argv);
+
+  // Load and merge configuration
+  const configFile = loadConfig(cliArgs.configPath);
+  const defaults = {
+    dryRun: true,
+    copy: false,
+    format: 'yyyy-mm-dd hh.MM.ss',
+    useMetadata: false,
+    metadataSource: 'content',
+    table: false,
+    wizard: false,
+    verbose: false,
+    quiet: false,
+    noRevert: false,
+    copyFlat: false,
+    depth: Infinity,
+    includeExt: [],
+    excludeExt: [],
+  };
+
+  const options = mergeConfig(defaults, configFile, cliArgs);
+
+  // Validate merged config
+  const validation = validateConfig(options);
+  if (!validation.valid) {
+    logger.error('❌ Configuration validation failed:');
+    validation.errors.forEach(error => logger.error(`   ${error}`));
+    process.exit(1);
+  }
 
   // Configure logger for CLI mode
   logger.enableCliMode();
@@ -637,6 +685,57 @@ async function main() {
 
   const stats = statSync(targetPath);
   const isDirectory = stats.isDirectory();
+
+  // Handle undo command
+  if (options.undo) {
+    const { execSync } = await import('child_process');
+    const revertScriptPath = isDirectory
+      ? join(targetPath, 'revert.sh')
+      : join(dirname(targetPath), 'revert.sh');
+
+    if (!existsSync(revertScriptPath)) {
+      logger.error(`❌ No revert script found at: ${revertScriptPath}`);
+      logger.error('   Revert scripts are created when you execute renaming operations.');
+      logger.error('   Make sure you\'re in the correct directory where the renaming was performed.');
+      process.exit(1);
+    }
+
+    logger.info('\n🔄 Undoing previous renaming operation...');
+    logger.info(`Revert script: ${revertScriptPath}\n`);
+
+    // Prompt for confirmation
+    const isInteractive = process.stdin.isTTY && process.stdout.isTTY;
+    if (isInteractive) {
+      const confirmed = await promptConfirmation(
+        'Are you sure you want to undo the previous renaming? This will restore original filenames.'
+      );
+
+      if (!confirmed) {
+        logger.info('Undo operation cancelled.');
+        process.exit(0);
+      }
+    }
+
+    try {
+      // Execute the revert script
+      logger.info('Executing revert script...\n');
+      execSync(`bash "${revertScriptPath}"`, {
+        stdio: 'inherit',
+        cwd: isDirectory ? targetPath : dirname(targetPath)
+      });
+
+      logger.info('\n✅ Successfully restored original filenames!');
+      logger.info(`\n💡 The revert script has been kept at: ${revertScriptPath}`);
+      logger.info('   You can delete it manually if no longer needed.');
+    } catch (error) {
+      logger.error(`\n❌ Failed to execute revert script: ${error.message}`);
+      logger.error('   You can try running the script manually:');
+      logger.error(`   bash "${revertScriptPath}"`);
+      process.exit(1);
+    }
+
+    process.exit(0);
+  }
 
   // Handle interactive mode
   if (options.wizard) {
@@ -820,6 +919,7 @@ async function main() {
     // If dry run, show summary and next steps
     if (options.dryRun) {
       // Process files without timestamps if --use-metadata is enabled (preview only)
+      let metadataFilesFound = 0;
       if (options.useMetadata && withoutTimestamp > 0) {
         logger.info(`\n📅 Processing ${withoutTimestamp} file(s) without timestamps using metadata...`);
         const metadataResult = await executeMetadataWorkflow(targetPath, {
@@ -832,14 +932,26 @@ async function main() {
         });
 
         if (metadataResult.results && metadataResult.results.length > 0) {
-          logger.info(`\n✓ Found ${metadataResult.results.length} file(s) that can be renamed using metadata\n`);
+          metadataFilesFound = metadataResult.results.length;
+          logger.info(`\n✓ Found ${metadataFilesFound} file(s) that can be renamed using metadata\n`);
         }
       }
 
       logger.info('\n' + '─'.repeat(60));
       logger.info('📋 SUMMARY');
       logger.info('─'.repeat(60));
-      logger.info(`  ✅ Files to rename: ${results.length}`);
+
+      // Calculate total files that can be renamed (filename + metadata)
+      const totalToRename = results.length + metadataFilesFound;
+      const remainingWithoutTimestamp = withoutTimestamp - metadataFilesFound;
+
+      logger.info(`  ✅ Files to rename: ${totalToRename}`);
+      if (results.length > 0) {
+        logger.info(`     • From filename: ${results.length}`);
+      }
+      if (metadataFilesFound > 0) {
+        logger.info(`     • From metadata: ${metadataFilesFound}`);
+      }
       if (alreadyFormatted > 0) {
         logger.info(`  ✓  Already formatted: ${alreadyFormatted}`);
       }
@@ -849,19 +961,19 @@ async function main() {
       if (skippedAmbiguous && skippedAmbiguous.length > 0) {
         logger.info(`  ⚠️  Skipped (ambiguous): ${skippedAmbiguous.length}`);
       }
-      if (withoutTimestamp > 0) {
-        logger.info(`  ℹ️  Without timestamps: ${withoutTimestamp}`);
+      if (remainingWithoutTimestamp > 0) {
+        logger.info(`  ℹ️  Without timestamps: ${remainingWithoutTimestamp}`);
       }
 
       // Next steps section
-      if ((skippedAmbiguous && skippedAmbiguous.length > 0) || withoutTimestamp > 0 || results.length > 0) {
+      if ((skippedAmbiguous && skippedAmbiguous.length > 0) || remainingWithoutTimestamp > 0 || totalToRename > 0) {
         logger.info('\n' + '─'.repeat(60));
         logger.info('🚀 NEXT STEPS');
         logger.info('─'.repeat(60));
 
-        if (results.length > 0) {
+        if (totalToRename > 0) {
           logger.info('  To apply these changes:');
-          logger.info(`    fixts "${basename(targetPath)}" --execute`);
+          logger.info(`    fixts "${basename(targetPath)}" --use-metadata --execute`);
           logger.info('');
         }
 
@@ -883,7 +995,7 @@ async function main() {
           logger.info('');
         }
 
-        if (withoutTimestamp > 0 && !options.useMetadata) {
+        if (remainingWithoutTimestamp > 0 && !options.useMetadata) {
           logger.info('  To process files without timestamps (using metadata):');
           logger.info(`    fixts "${basename(targetPath)}" --use-metadata --execute`);
           logger.info('');

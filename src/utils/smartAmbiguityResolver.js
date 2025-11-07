@@ -10,6 +10,7 @@
 
 import { statSync } from 'fs';
 import { detectAmbiguity } from './ambiguityDetector.js';
+import { logger } from './logger.js';
 
 /**
  * Calculate confidence score for a date interpretation based on file mtime
@@ -82,8 +83,9 @@ function resolveDayMonthAmbiguity(filePath, ambiguity) {
         alternativeConfidence: mdyConfidence,
       };
     }
-  } catch {
+  } catch (error) {
     // If we can't read file stats, return neutral
+    logger.debug('Could not read file stats for ambiguity resolution:', { filePath, error: error.message });
     return { resolution: null, confidence: 50, suggestion: null };
   }
 }
@@ -134,8 +136,9 @@ function resolveTwoDigitYearAmbiguity(filePath, ambiguity) {
         alternativeConfidence: confidence2000s,
       };
     }
-  } catch {
+  } catch (error) {
     // If we can't read file stats, return neutral
+    logger.debug('Could not read file stats for year ambiguity resolution:', { filePath, error: error.message });
     return { resolution: null, confidence: 50, suggestion: null };
   }
 }
