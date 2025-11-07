@@ -1,6 +1,6 @@
 {
   "name": "fixts",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "CLI tool to normalize filenames and folders with timestamps to a consistent format",
   "main": "index.js",
   "type": "module",
