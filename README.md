@@ -16,7 +16,12 @@ fixts (fix timestamps) scans your files and folders, detects various timestamp f
 
 - 🔍 **Smart Detection** - Recognizes 50+ timestamp formats automatically
 - 📁 **Bulk Processing** - Handle entire directories recursively
-- 🎨 **Flexible Formatting** - Customize output format to your needs
+- 🚀 **Batch API** - Process 1000+ files efficiently (250,000 files/s)
+- 🎯 **Confidence Scoring** - Know which detections are reliable (0.0-1.0)
+- 🧠 **Context-Aware Format Detection** - Auto-determine DD-MM vs MM-DD from batch analysis
+- 🎨 **Custom Patterns** - Register your own patterns for organization-specific naming conventions
+- � **Unified Metadata API** - Extract timestamps from any source (filename, EXIF, audio, file system)
+- �🔧 **Flexible Formatting** - Customize output format to your needs
 - 🔄 **Safe Operations** - Preview changes before applying (dry-run by default)
 - 📋 **Copy Mode** - Preserve originals in `_c/` directory
 - ⏰ **Time Shifting** - Correct camera clock errors (e.g., wrong timezone)
@@ -328,6 +333,298 @@ const audioDate = await parseTimestampFromAudio(audioFile);
 - ❌ Can't rename files on disk (can only suggest new names)
 
 For a complete migration guide from copied code to npm package, see: [diapaudio Migration Guide](./docs/DIAPAUDIO_MIGRATION.md)
+
+---
+
+## Batch Processing API
+
+Process thousands of files efficiently with the Batch API! 🚀
+
+**Performance:** 250,000+ files/second on typical hardware.
+
+```javascript
+import {
+  parseTimestampBatch,
+  parseAndGroupByConfidence,
+  getBatchStats,
+  filterByTimestamp
+} from 'fixts';
+
+// Parse 1000 files at once
+const results = parseTimestampBatch(filenames);
+
+// Group by confidence (high/medium/low)
+const grouped = parseAndGroupByConfidence(filenames);
+console.log(`${grouped.high.length} high-confidence files`);
+console.log(`${grouped.medium.length} may need review`);
+
+// Get statistics
+const stats = getBatchStats(filenames);
+console.log(`Detected: ${stats.detected}/${stats.total}`);
+console.log(`Avg confidence: ${stats.avgConfidence.toFixed(2)}`);
+
+// Filter files
+const filtered = filterByTimestamp(filenames);
+console.log(`${filtered.withTimestamp.length} files ready to process`);
+```
+
+**Use cases:**
+- Bulk photo organization (process entire folders at once)
+- Quality assurance reports (analyze detection quality)
+- Archive migration (preserve timestamps across systems)
+- Pre-flight checks (validate before batch processing)
+
+See the complete guide: [Batch Processing API Documentation](./docs/BATCH_API.md)
+
+Try the demo: `node examples/batch-demo.js`
+
+---
+
+## Context-Aware Date Format Resolution
+
+Automatically determine whether files use DD-MM or MM-DD format! 🧠
+
+**How it works:** Analyzes your files to detect format patterns, using unambiguous dates (like 15-03 which must be DD-MM) as evidence. Provides confidence scores so you know when to trust auto-detection vs. when to prompt the user.
+
+```javascript
+import {
+  analyzeContextualFormat,
+  resolveAmbiguitiesByContext,
+  getContextualParsingOptions,
+  parseTimestampBatch
+} from 'fixts';
+
+// Analyze a batch of files
+const files = [
+  'photo_15-03-2024.jpg',  // day=15 > 12, must be DD-MM
+  'video_20-06-2024.mp4',  // day=20 > 12, must be DD-MM
+  'doc_08-04-2024.pdf'     // ambiguous (both ≤12)
+];
+
+const analysis = analyzeContextualFormat(files);
+console.log(analysis.recommendation);  // 'dmy'
+console.log(analysis.confidence);      // 0.95 (high!)
+console.log(analysis.evidence);        // Why this recommendation
+
+// Auto-resolve if confidence is high
+const resolution = resolveAmbiguitiesByContext(analysis);
+if (resolution.autoResolved) {
+  console.log(`Format: ${resolution.format}`);
+} else if (resolution.shouldPromptUser) {
+  // Low confidence - ask user
+  const format = await promptUserForFormat();
+}
+
+// Get parsing options for batch processing
+const options = getContextualParsingOptions(files);
+const results = parseTimestampBatch(files, options);
+```
+
+**Directory prioritization:** Files in the same folder more likely share naming conventions:
+
+```javascript
+const analysis = analyzeContextualFormat(files, {
+  currentDirectory: '/project/europe'
+});
+// Prioritizes files from /project/europe for format detection
+```
+
+**Confidence levels:**
+- **High (≥0.85):** Multiple unambiguous dates, consistent pattern → auto-resolve
+- **Medium (0.70-0.84):** Some evidence, minor conflicts → auto-resolve with caution
+- **Low (<0.70):** Only ambiguous dates or major conflicts → prompt user
+
+Try the demo: `node examples/contextAwareResolution.js`
+
+---
+
+## Custom Pattern Support
+
+Register your own timestamp patterns for organization-specific naming conventions! 🎨
+
+**Why custom patterns?** While fixTS recognizes 50+ common formats, every organization has unique conventions. Custom patterns make fixTS extensible for any naming scheme.
+
+```javascript
+import { registerPattern, parseTimestamp } from 'fixts';
+
+// Example 1: Simple function extractor
+registerPattern({
+  name: 'project-code',
+  regex: /PRJ(\d{4})(\d{2})(\d{2})-/,
+  extractor: (match) => ({
+    year: parseInt(match[1]),
+    month: parseInt(match[2]),
+    day: parseInt(match[3])
+  }),
+  description: 'Internal project code format'
+});
+
+const date = parseTimestamp('PRJ20240315-budget-report.xlsx');
+// → Fri Mar 15 2024
+
+// Example 2: Named capture groups (cleaner!)
+registerPattern({
+  name: 'log-format',
+  regex: /LOG_(?<year>\d{4})(?<month>\d{2})(?<day>\d{2})_(?<hour>\d{2})(?<minute>\d{2})/,
+  extractor: 'named',
+  priority: 50  // Lower priority = checked first
+});
+
+// Example 3: Mapping object (simple!)
+registerPattern({
+  name: 'backup',
+  regex: /BACKUP-(\d{2})\.(\d{2})\.(\d{4})-(\d{2})h(\d{2})/,
+  extractor: {
+    day: 1,      // First capture group
+    month: 2,    // Second capture group
+    year: 3,     // Third capture group
+    hour: 4,
+    minute: 5
+  }
+});
+```
+
+**Pattern Priority:** Patterns are checked in priority order (lower value first). Custom patterns are checked before the built-in heuristic, so they can override standard detection for your specific formats.
+
+**Export/Import:**
+```javascript
+import { exportPatterns, importPatterns } from 'fixts';
+
+// Save your patterns
+const json = exportPatterns();
+fs.writeFileSync('patterns.json', json);
+
+// Load patterns
+const json = fs.readFileSync('patterns.json', 'utf-8');
+importPatterns(json);
+```
+
+**API Functions:**
+- `registerPattern(pattern)` - Register a new pattern
+- `unregisterPattern(name)` - Remove a pattern
+- `getRegisteredPatterns()` - List all patterns
+- `clearPatterns()` - Remove all patterns
+- `hasPattern(name)` / `getPattern(name)` - Check and retrieve
+- `exportPatterns()` / `importPatterns(json)` - Save and load
+
+Try the demo: `node examples/customPatterns.js`
+
+---
+
+## Unified Metadata API
+
+Extract timestamps from **any source** with a single interface! 🔗
+
+**Why unified metadata?** Files contain timestamps in multiple places: filename, EXIF data, audio tags, file creation time. The unified API automatically finds and prioritizes the best source.
+
+```javascript
+import { extractTimestamp, SOURCE_TYPE } from 'fixts';
+
+// Example 1: Extract from best available source
+const result = await extractTimestamp('photo.jpg');
+console.log(result.source);      // 'exif'
+console.log(result.timestamp);   // Date object
+console.log(result.confidence);  // 0.95
+
+// Example 2: Get all available sources
+const all = await extractTimestamp('photo.jpg', { includeAll: true });
+console.log(all.primary);        // Best source
+console.log(all.all);            // All sources (filename, exif, mtime, etc.)
+
+// Example 3: Custom source priority
+const custom = await extractTimestamp('file.txt', {
+  sources: [SOURCE_TYPE.MTIME, SOURCE_TYPE.FILENAME]
+});
+
+// Example 4: Batch processing
+import { extractTimestampBatch } from 'fixts';
+
+const results = await extractTimestampBatch([
+  'photo1.jpg',
+  'photo2.jpg',
+  'document.pdf'
+]);
+
+results.forEach(({ filepath, result }) => {
+  console.log(`${filepath}: ${result?.source} - ${result?.timestamp}`);
+});
+
+// Example 5: Compare sources and detect discrepancies
+import { compareTimestampSources } from 'fixts';
+
+const comparison = await compareTimestampSources('photo.jpg');
+if (comparison.hasDiscrepancy) {
+  console.log('Warning: Sources disagree!');
+  comparison.discrepancies.forEach(d => console.log(d.message));
+}
+console.log(`Recommendation: ${comparison.recommendation}`);
+
+// Example 6: Get statistics for batch
+import { getSourceStatistics } from 'fixts';
+
+const stats = await getSourceStatistics(['photo1.jpg', 'photo2.jpg']);
+console.log(`Average confidence: ${stats.avgConfidence}`);
+console.log(`Source distribution:`, stats.sourceDistribution);
+// { filename: 10, exif: 45, mtime: 5 }
+
+// Example 7: Get best source suggestion
+import { suggestBestSource } from 'fixts';
+
+const suggestion = await suggestBestSource('photo.jpg');
+console.log(`Use ${suggestion.suggestion} (${suggestion.confidence})`);
+console.log(`Reason: ${suggestion.reason}`);
+```
+
+**Source Types & Confidence:**
+- `filename`: 70% - Heuristic detection from filename
+- `exif`: 95% - Camera EXIF metadata (images)
+- `audio`: 90% - Audio file tags (MP3, M4A, etc.)
+- `birthtime`: 60% - File creation time
+- `mtime`: 50% - File modification time
+- `custom`: Variable - Custom pattern extractors
+
+**Default Priority:** filename → exif → audio → birthtime → mtime
+
+**API Functions:**
+- `extractTimestamp(filepath, options)` - Extract from single file
+- `extractTimestampBatch(filepaths, options)` - Batch processing
+- `compareTimestampSources(filepath, options)` - Detect discrepancies
+- `getSourceStatistics(filepaths)` - Analyze batch statistics
+- `suggestBestSource(filepath)` - Get best source recommendation
+- `SOURCE_TYPE` - Source type constants
+- `DEFAULT_PRIORITY` - Default source order
+
+Try the demo: `node examples/unifiedMetadata.js`
+
+---
+
+## Cross-Context Compatibility
+
+All features work in **Node.js**, **Browser**, and **CLI** contexts! 🎯
+
+### Quick Reference
+
+| Context | Entry Point | Features |
+|---------|-------------|----------|
+| **Node.js** | `import from 'fixts'` | All features (full API) |
+| **Browser** | `import from 'fixts/browser'` | Browser-safe subset |
+| **CLI** | `fixts` command | All features via flags |
+
+### Browser Usage
+
+```javascript
+import { parseTimestamp, extractTimestamp } from 'fixts/browser';
+
+// Works with File objects or filename strings
+const result = await extractTimestamp(fileInput.files[0]);
+console.log(`Extracted from: ${result.source}`);
+```
+
+**Note:** Browser version excludes Node.js-specific sources (mtime, birthtime) but includes filename, EXIF, and audio metadata extraction.
+
+**Full Guide:** See [docs/CROSS_CONTEXT_GUIDE.md](./docs/CROSS_CONTEXT_GUIDE.md) for detailed usage examples, feature matrix, and troubleshooting.
+
+**Verify:** Run `node verify-cross-context.js` to verify all features work in all contexts.
 
 ---
 

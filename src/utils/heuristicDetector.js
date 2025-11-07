@@ -537,8 +537,9 @@ function analyzeSeparatedComponents(sequences, filename, dateFormat = 'dmy') {
       const sep1 = getSeparatorBetween(filename, seq.end, seq2.start);
       const sep2 = getSeparatorBetween(filename, seq2.end, seq3.start);
 
-      // Same separator and common date separators
-      if (sep1 && sep1 === sep2 && ['-', '.', '/', '_'].includes(sep1)) {
+      // Same separator and common date/time separators
+      // Include colon for time formats (HH:MM:SS)
+      if (sep1 && sep1 === sep2 && ['-', '.', '/', '_', ':'].includes(sep1)) {
         // Pattern: 4-2-2 = YYYY-MM-DD
         if (seq.digits === 4 && seq2.digits === 2 && seq3.digits === 2) {
           const year = seq.numValue;
@@ -977,6 +978,105 @@ export function detectTimestampHeuristic(filename, options = {}) {
 }
 
 /**
+ * Calculate confidence score for a detected timestamp
+ * @param {Object} timestamp - Detected timestamp object
+ * @param {string} filename - Original filename
+ * @returns {number} - Confidence score (0.0 - 1.0)
+ */
+function calculateConfidence(timestamp, filename) {
+  if (!timestamp) return 0;
+
+  let confidence = 0.5; // Base confidence
+
+  // Factor 1: Pattern specificity (40% weight)
+  const specificityScores = {
+    // High confidence: Camera/app-specific formats
+    'CAMERA_IMG': 0.95,
+    'CAMERA_VID': 0.95,
+    'CAMERA_PXL': 0.95,
+    'CAMERA_REC': 0.95,
+    'WHATSAPP': 0.90,
+    'SCREENSHOT': 0.90,
+    'ISO_DATETIME': 0.90,
+
+    // Medium-high: Clear structured formats
+    'ISO_DATE': 0.85,
+    'EUROPEAN_DATE': 0.75,
+    'US_DATE': 0.75,
+    'FRENCH_TIME': 0.80,
+    'COMPACT_DATETIME': 0.70,
+
+    // Medium: Less specific
+    'COMPACT_EUROPEAN': 0.65,
+    'COMPACT_US': 0.65,
+    'COMPACT_AMBIGUOUS': 0.50, // Ambiguous by definition
+
+    // Lower: Generic patterns
+    'SEPARATED_DATETIME': 0.60,
+    'YEAR_MONTH': 0.50,
+    'YEAR_ONLY': 0.40,
+    'MERGED_DATETIME': 0.70,
+  };
+
+  const specificityScore = specificityScores[timestamp.type] || 0.50;
+  confidence = specificityScore;
+
+  // Factor 2: Precision bonus (up to +0.15)
+  const precisionBonus = {
+    'millisecond': 0.15,
+    'second': 0.10,
+    'minute': 0.05,
+    'day': 0.02,
+    'month': 0.01,
+    'year': 0.0
+  };
+  confidence += precisionBonus[timestamp.precision] || 0;
+
+  // Factor 3: Position in filename (early = more likely intentional) (up to +0.10)
+  const filenameLength = filename.length;
+  const relativePosition = timestamp.start / filenameLength;
+  if (relativePosition < 0.3) {
+    confidence += 0.10; // Early in filename
+  } else if (relativePosition < 0.5) {
+    confidence += 0.05; // Middle
+  }
+
+  // Factor 4: Validation success (components are valid) (+0.05)
+  const hasValidComponents =
+    timestamp.year >= 1970 && timestamp.year <= 2100 &&
+    (!timestamp.month || (timestamp.month >= 1 && timestamp.month <= 12)) &&
+    (!timestamp.day || (timestamp.day >= 1 && timestamp.day <= 31)) &&
+    (!timestamp.hour || (timestamp.hour >= 0 && timestamp.hour < 24)) &&
+    (!timestamp.minute || (timestamp.minute >= 0 && timestamp.minute < 60)) &&
+    (!timestamp.second || (timestamp.second >= 0 && timestamp.second < 60));
+
+  if (hasValidComponents) {
+    confidence += 0.05;
+  }
+
+  // Factor 5: Context markers (keywords that suggest timestamps) (+0.10)
+  const contextMarkers = [
+    /\bIMG_/i, /\bVID_/i, /\bPXL_/i, /\bREC_/i,
+    /\bScreenshot/i, /\bWhatsApp/i, /\bSignal/i,
+    /\bphoto/i, /\bvideo/i, /\brecording/i,
+    /\bbackup/i, /\bexport/i, /\barchive/i
+  ];
+
+  const hasContextMarker = contextMarkers.some(marker => marker.test(filename));
+  if (hasContextMarker) {
+    confidence += 0.10;
+  }
+
+  // Factor 6: Penalty for ambiguity (-0.20)
+  if (timestamp.ambiguous) {
+    confidence -= 0.20;
+  }
+
+  // Clamp to [0, 1]
+  return Math.max(0, Math.min(1, confidence));
+}
+
+/**
  * Get the best (most precise) timestamp from filename
  */
 export function getBestTimestamp(filename, options = {}) {
@@ -994,7 +1094,7 @@ export function getBestTimestamp(filename, options = {}) {
 
   if (fullDateTime && timeOnly && timeOnly.start > fullDateTime.end) {
     // Merge: use date from first, time from second
-    return {
+    const merged = {
       ...fullDateTime,
       hour: timeOnly.hour,
       minute: timeOnly.minute,
@@ -1003,6 +1103,9 @@ export function getBestTimestamp(filename, options = {}) {
       end: timeOnly.end,
       type: 'MERGED_DATETIME',
     };
+    // Add confidence score
+    merged.confidence = calculateConfidence(merged, filename);
+    return merged;
   }
 
   // Precision order: millisecond > second > day > month > year
@@ -1026,7 +1129,20 @@ export function getBestTimestamp(filename, options = {}) {
     return precB - precA;
   });
 
-  return timestamps[0];
+  const best = timestamps[0];
+
+  // Add confidence score to the result
+  best.confidence = calculateConfidence(best, filename);
+
+  // Add alternative timestamps if there are multiple candidates
+  if (timestamps.length > 1) {
+    best.alternatives = timestamps.slice(1).map(ts => ({
+      ...ts,
+      confidence: calculateConfidence(ts, filename)
+    }));
+  }
+
+  return best;
 }
 
 /**

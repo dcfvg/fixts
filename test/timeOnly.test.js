@@ -99,4 +99,60 @@ describe('Time-only format support', () => {
     assert.equal(result.getMinutes(), 30);
     assert.equal(result.getSeconds(), 25);
   });
+
+  test('should parse HH:MM:SS format with colons', () => {
+    const result = parseTimestampFromName('recording_14:30:25.m4a', { allowTimeOnly: true });
+    assert.notEqual(result, null);
+    assert.equal(result.getHours(), 14);
+    assert.equal(result.getMinutes(), 30);
+    assert.equal(result.getSeconds(), 25);
+  });
+
+  test('should handle mixed separators gracefully', () => {
+    // Mixed separators: will match the first valid time pattern found
+    // In this case, matches 14.30 (HH.MM) but ignores the :25
+    const result = parseTimestampFromName('recording_14.30:25.m4a', { allowTimeOnly: true });
+    // Should match HH.MM (14:30) and ignore the inconsistent :25
+    assert.notEqual(result, null);
+    assert.equal(result.getHours(), 14);
+    assert.equal(result.getMinutes(), 30);
+  });
+
+  test('should parse time at different positions in filename', () => {
+    // At end
+    const end = parseTimestampFromName('myfile_14:30:25.mp3', { allowTimeOnly: true });
+    assert.notEqual(end, null);
+    assert.equal(end.getHours(), 14);
+
+    // At beginning
+    const start = parseTimestampFromName('14:30:25_recording.mp3', { allowTimeOnly: true });
+    assert.notEqual(start, null);
+    assert.equal(start.getHours(), 14);
+
+    // In middle
+    const middle = parseTimestampFromName('prefix_14:30:25_suffix.mp3', { allowTimeOnly: true });
+    assert.notEqual(middle, null);
+    assert.equal(middle.getHours(), 14);
+  });
+
+  test('should handle edge case times', () => {
+    // Midnight
+    const midnight = parseTimestampFromName('recording_00:00:00.m4a', { allowTimeOnly: true });
+    assert.notEqual(midnight, null);
+    assert.equal(midnight.getHours(), 0);
+    assert.equal(midnight.getMinutes(), 0);
+    assert.equal(midnight.getSeconds(), 0);
+
+    // Noon
+    const noon = parseTimestampFromName('recording_12:00:00.m4a', { allowTimeOnly: true });
+    assert.notEqual(noon, null);
+    assert.equal(noon.getHours(), 12);
+
+    // End of day
+    const endOfDay = parseTimestampFromName('recording_23:59:59.m4a', { allowTimeOnly: true });
+    assert.notEqual(endOfDay, null);
+    assert.equal(endOfDay.getHours(), 23);
+    assert.equal(endOfDay.getMinutes(), 59);
+    assert.equal(endOfDay.getSeconds(), 59);
+  });
 });

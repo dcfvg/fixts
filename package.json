@@ -1,6 +1,6 @@
 {
   "name": "fixts",
-  "version": "1.0.5",
+  "version": "1.0.8",
   "description": "CLI tool to normalize filenames and folders with timestamps to a consistent format",
   "main": "index.js",
   "type": "module",
@@ -61,5 +61,9 @@
     "docdash": "^2.0.2",
     "eslint": "^9.39.0",
     "jsdoc": "^4.0.5"
+  },
+  "dependencies": {
+    "exifreader": "^4.32.0",
+    "music-metadata": "^11.9.0"
   }
 }

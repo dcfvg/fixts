@@ -10,12 +10,15 @@ import {
   timestampToDate,
 } from './heuristicDetector.js';
 
+import { applyCustomPatterns } from './customPatternManager.js';
+
 /**
  * Detection methods
  */
 export const DETECTION_METHOD = {
   HEURISTIC: 'heuristic',
   AUTO: 'auto', // Same as heuristic (for compatibility)
+  CUSTOM: 'custom', // Custom patterns only
 };
 
 /**
@@ -23,18 +26,31 @@ export const DETECTION_METHOD = {
  *
  * @param {string} filename - Filename to parse
  * @param {Object} options - Parsing options
- * @param {string} options.method - Detection method: 'heuristic' or 'auto' (default)
+ * @param {string} options.method - Detection method: 'heuristic', 'auto', or 'custom' (default: 'auto')
  * @param {string} options.dateFormat - Date format for ambiguous dates: 'dmy' or 'mdy' (default: 'dmy')
  * @param {boolean} options.allowTimeOnly - Allow time-only formats (uses current date) (default: false)
+ * @param {boolean} options.customOnly - Only use custom patterns, skip heuristic (default: false)
  * @returns {Date|null} - Parsed date or null if no timestamp found
  */
 export function parseTimestamp(filename, options = {}) {
-  const { dateFormat = 'dmy', allowTimeOnly = false } = options;
+  const { dateFormat = 'dmy', allowTimeOnly = false, customOnly = false } = options;
 
   if (!filename || typeof filename !== 'string') {
     return null;
   }
 
+  // Try custom patterns first (if any are registered)
+  const customResult = applyCustomPatterns(filename);
+  if (customResult) {
+    return timestampToDate(customResult, { allowTimeOnly });
+  }
+
+  // If customOnly is true, don't fallback to heuristic
+  if (customOnly) {
+    return null;
+  }
+
+  // Fallback to heuristic detection
   return parseWithHeuristic(filename, { dateFormat, allowTimeOnly });
 }
 
@@ -55,10 +71,21 @@ function parseWithHeuristic(filename, options = {}) {
  * @returns {Object} - Detection details
  */
 export function getDetectionInfo(filename) {
+  const customTimestamp = applyCustomPatterns(filename);
+  const customDate = customTimestamp ? timestampToDate(customTimestamp) : null;
+
   const heuristicTimestamp = getBestTimestamp(filename);
   const heuristicDate = timestampToDate(heuristicTimestamp);
 
   return {
+    custom: {
+      detected: !!customTimestamp,
+      timestamp: customTimestamp,
+      date: customDate,
+      pattern: customTimestamp?.customPattern,
+      type: customTimestamp?.type,
+      precision: customTimestamp?.precision,
+    },
     heuristic: {
       detected: !!heuristicTimestamp,
       timestamp: heuristicTimestamp,

@@ -1,14 +1,48 @@
 import readline from 'readline';
+import { getBestTimestamp } from './heuristicDetector.js';
 
 /**
  * Detect potential ambiguities in date parsing
+ *
+ * This function identifies dates that COULD be interpreted multiple ways,
+ * even if the heuristic has already resolved them based on user preferences.
+ * Useful for warnings, user prompts, or analysis.
+ *
  * @param {string} filename - Filename to analyze
+ * @param {Object} options - Detection options
+ * @param {string} options.dateFormat - Date format preference: 'dmy' or 'mdy'
  * @returns {Object|null} - Ambiguity info or null if none detected
  */
-export function detectAmbiguity(filename) {
-  // Check for DD-MM-YYYY vs MM-DD-YYYY ambiguity
-  const dmyPattern = /(\d{2})[-_/](\d{2})[-_/](\d{4})/;
-  const match = filename.match(dmyPattern);
+export function detectAmbiguity(filename, options = {}) {
+  const { dateFormat = 'dmy' } = options;
+
+  // First, try heuristic detection for compact formats (truly ambiguous)
+  const timestamp = getBestTimestamp(filename, { dateFormat });
+
+  if (timestamp && timestamp.ambiguous && timestamp.type === 'COMPACT_AMBIGUOUS') {
+    // Compact format ambiguity (e.g., 05062024)
+    const alt1 = timestamp.alternatives[0]; // European
+    const alt2 = timestamp.alternatives[1]; // US
+
+    return {
+      type: 'day-month-order',
+      pattern: filename.substring(timestamp.start, timestamp.end),
+      first: timestamp.day,   // Currently interpreted as day (DMY)
+      second: timestamp.month, // Currently interpreted as month (DMY)
+      filename,
+      options: [
+        { label: alt1.format, value: 'dmy' },
+        { label: alt2.format, value: 'mdy' }
+      ],
+      heuristicInfo: timestamp
+    };
+  }
+
+  // For separated formats, check if they WOULD be ambiguous
+  // (even though heuristic resolves them via dateFormat option)
+  // This is useful for warning users about their data
+  const separatedPattern = /(\d{2})[-_/](\d{2})[-_/](\d{4})/;
+  const match = filename.match(separatedPattern);
 
   if (match) {
     const first = parseInt(match[1], 10);
@@ -25,37 +59,8 @@ export function detectAmbiguity(filename) {
         options: [
           { label: 'DD-MM-YYYY (European)', value: 'dmy' },
           { label: 'MM-DD-YYYY (US)', value: 'mdy' }
-        ]
-      };
-    }
-  }
-
-  // Check for 2-digit year ambiguity
-  // Pattern: YYMMDD_HHMMSS (e.g., 241103_143045)
-  // But NOT when preceded by YYYYMMDD (e.g., IMG_20241103_143045)
-  const twoDigitYearPattern = /(?<!\d)(\d{2})(\d{2})(\d{2})[_-](\d{2})(\d{2})(\d{2})(?!\d)/;
-  const match2 = filename.match(twoDigitYearPattern);
-
-  if (match2) {
-    const year = parseInt(match2[1], 10);
-    const month = parseInt(match2[2], 10);
-    const day = parseInt(match2[3], 10);
-
-    // Only consider it ambiguous if it looks like a real date
-    // (not time components like 14:30:45)
-    const isValidDate = month >= 1 && month <= 12 && day >= 1 && day <= 31;
-
-    // If year could be 19xx or 20xx and looks like a valid date
-    if (year >= 0 && year <= 99 && isValidDate) {
-      return {
-        type: 'two-digit-year',
-        pattern: match2[0],
-        year,
-        filename,
-        options: [
-          { label: `20${String(year).padStart(2, '0')} (2000s)`, value: 2000 },
-          { label: `19${String(year).padStart(2, '0')} (1900s)`, value: 1900 }
-        ]
+        ],
+        note: 'Resolved by dateFormat option, but flagged for awareness'
       };
     }
   }

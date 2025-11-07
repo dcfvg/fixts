@@ -49,6 +49,49 @@ export {
   splitBasename
 } from './src/utils/path-utils.js';
 
-export { detectAmbiguity } from './src/utils/ambiguityDetector.js';
+// Ambiguity detection (browser-safe, no Node.js dependencies)
+export { detectAmbiguity } from './src/utils/ambiguityDetector-browser.js';
 
 export { detectPattern } from './src/utils/fileGrouper.js';
+
+// Batch processing API (browser-safe, high-performance)
+export {
+  parseTimestampBatch,
+  parseAndGroupByConfidence,
+  getBatchStats,
+  filterByTimestamp
+} from './src/utils/batchProcessor.js';
+
+// Context-aware ambiguity resolution (browser-safe)
+export {
+  analyzeContextualFormat,
+  resolveAmbiguitiesByContext,
+  getContextualParsingOptions,
+  hasAmbiguousDates,
+  getFormatSummary
+} from './src/utils/contextualResolver.js';
+
+// Custom pattern support (browser-safe, extensible API)
+export {
+  registerPattern,
+  unregisterPattern,
+  getRegisteredPatterns,
+  clearPatterns,
+  hasPattern,
+  getPattern,
+  applyCustomPatterns,
+  exportPatterns,
+  importPatterns,
+  PatternValidationError
+} from './src/utils/customPatternManager.js';
+
+// Unified metadata extraction (browser-safe subset)
+export {
+  extractTimestamp,
+  extractTimestampBatch,
+  compareTimestampSources,
+  getSourceStatistics,
+  suggestBestSource,
+  SOURCE_TYPE,
+  DEFAULT_PRIORITY
+} from './src/utils/unifiedMetadataExtractor-browser.js';
