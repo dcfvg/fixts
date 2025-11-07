@@ -293,18 +293,45 @@ fixts ~/Archive --format "yyyy-mm-dd" --execute
 ## Testing
 
 ```bash
-# Run all tests
+# Run unit tests
 npm test
 
 # Run integration tests
 npm run test:integration
 
+# Run all tests (lint + unit + integration)
+npm run test:all
+
 # Lint check
 npm run lint
 
-# Full verification
+# Full verification with summary
 npm run verify
 ```
+
+---
+
+## Development & Publishing
+
+### Quick Reference
+
+```bash
+# Test before publishing
+npm run publish:test  # Create tarball after tests (for local verification)
+npm run publish:safe  # Show package details
+
+# Publish new version (with automatic testing)
+npm run version:patch  # Bug fixes (1.0.2 → 1.0.3)
+npm run version:minor  # New features (1.0.2 → 1.1.0)
+npm run version:major  # Breaking changes (1.0.2 → 2.0.0)
+```
+
+All version commands automatically:
+1. Run full test suite (lint + unit tests + integration tests)
+2. Bump version number
+3. Create git tag
+4. Push to GitHub
+5. Publish to npm
 
 ---
 

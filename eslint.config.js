@@ -35,6 +35,6 @@ export default [
     }
   },
   {
-    ignores: ['node_modules/**', 'sample/**', 'test/local-sample/temp/**']
+    ignores: ['node_modules/**', 'sample/**', 'test/local-sample/temp/**', 'fixts-webapp/**']
   }
 ];
