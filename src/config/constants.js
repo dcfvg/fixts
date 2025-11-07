@@ -70,3 +70,29 @@ export const DEFAULTS = {
   COPY_MODE: false,
   DATE_ORDER: 'dmy' // 'dmy' or 'mdy'
 };
+
+/**
+ * Confidence score thresholds
+ * Used for timestamp detection reliability assessment
+ */
+export const CONFIDENCE = {
+  // Threshold levels
+  VERY_HIGH: 0.95,  // EXIF/metadata - highly reliable
+  HIGH: 0.85,       // ISO format, custom patterns - reliable
+  MEDIUM_HIGH: 0.70, // Filename parsing with good context
+  MEDIUM: 0.50,     // Base confidence for detected timestamps
+  LOW: 0.30,        // Ambiguous or uncertain timestamps
+
+  // Confidence adjustments
+  BASE: 0.50,           // Starting confidence for heuristic detection
+  BOOST_EARLY: 0.10,    // Timestamp appears early in filename
+  BOOST_MIDDLE: 0.05,   // Timestamp in middle of filename
+  BOOST_CONTEXT: 0.05,  // Context markers found (e.g., "photo", "video")
+  BOOST_PRECISION: 0.10, // High precision timestamp (includes time)
+  PENALTY_AMBIGUOUS: 0.20, // Ambiguous date format detected
+
+  // Grouping thresholds (for batch processing)
+  THRESHOLD_HIGH: 0.85,
+  THRESHOLD_MEDIUM: 0.70,
+  THRESHOLD_LOW: 0.50
+};

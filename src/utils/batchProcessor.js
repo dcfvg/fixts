@@ -12,6 +12,7 @@
 
 import { getBestTimestamp } from './heuristicDetector.js';
 import { timestampToDate } from './heuristicDetector.js';
+import { CONFIDENCE } from '../config/constants.js';
 
 /**
  * Parse timestamps from multiple filenames efficiently
@@ -125,21 +126,21 @@ export function parseAndGroupByConfidence(filenames, options = {}) {
   const results = parseTimestampBatch(filenames, options);
 
   const grouped = {
-    high: [],      // confidence >= 0.85
-    medium: [],    // confidence 0.70 - 0.84
-    low: [],       // confidence 0.50 - 0.69
-    veryLow: [],   // confidence < 0.50
+    high: [],      // confidence >= CONFIDENCE.THRESHOLD_HIGH
+    medium: [],    // confidence CONFIDENCE.THRESHOLD_MEDIUM - (THRESHOLD_HIGH - 0.01)
+    low: [],       // confidence CONFIDENCE.THRESHOLD_LOW - (THRESHOLD_MEDIUM - 0.01)
+    veryLow: [],   // confidence < CONFIDENCE.THRESHOLD_LOW
     none: []       // no timestamp detected
   };
 
   for (const result of results) {
     if (!result.date) {
       grouped.none.push(result);
-    } else if (result.confidence >= 0.85) {
+    } else if (result.confidence >= CONFIDENCE.THRESHOLD_HIGH) {
       grouped.high.push(result);
-    } else if (result.confidence >= 0.70) {
+    } else if (result.confidence >= CONFIDENCE.THRESHOLD_MEDIUM) {
       grouped.medium.push(result);
-    } else if (result.confidence >= 0.50) {
+    } else if (result.confidence >= CONFIDENCE.THRESHOLD_LOW) {
       grouped.low.push(result);
     } else {
       grouped.veryLow.push(result);

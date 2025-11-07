@@ -20,6 +20,8 @@ import {
   isValidSeconds
 } from './dateValidators.js';
 
+import { CONFIDENCE } from '../config/constants.js';
+
 /**
  * Validators for timestamp components
  */
@@ -464,26 +466,6 @@ function tryFourDigits(seq, filename) {
  * Try to parse as 2-digit component (could be year, month, day, etc.)
  * Currently unused but kept for future enhancements
  */
-function _tryTwoDigits(seq) {
-  if (seq.digits !== 2) return null;
-
-  const val = seq.numValue;
-
-  return {
-    value: val,
-    possibleTypes: [
-      validators.year2(val) ? 'year2' : null,
-      validators.month(val) ? 'month' : null,
-      validators.day(val) ? 'day' : null,
-      validators.hour(val) ? 'hour' : null,
-      validators.minute(val) ? 'minute' : null,
-      validators.second(val) ? 'second' : null,
-    ].filter(Boolean),
-    start: seq.start,
-    end: seq.end,
-  };
-}
-
 /**
  * Detect French time format: HHhMMmSSsmmm or HHhMMmSSs
  * Examples: 14h05m37s448, 19h22m44s055
@@ -989,45 +971,45 @@ export function detectTimestampHeuristic(filename, options = {}) {
 function calculateConfidence(timestamp, filename) {
   if (!timestamp) return 0;
 
-  let confidence = 0.5; // Base confidence
+  let confidence = CONFIDENCE.BASE; // Base confidence
 
   // Factor 1: Pattern specificity (40% weight)
   const specificityScores = {
     // High confidence: Camera/app-specific formats
-    'CAMERA_IMG': 0.95,
-    'CAMERA_VID': 0.95,
-    'CAMERA_PXL': 0.95,
-    'CAMERA_REC': 0.95,
+    'CAMERA_IMG': CONFIDENCE.VERY_HIGH,
+    'CAMERA_VID': CONFIDENCE.VERY_HIGH,
+    'CAMERA_PXL': CONFIDENCE.VERY_HIGH,
+    'CAMERA_REC': CONFIDENCE.VERY_HIGH,
     'WHATSAPP': 0.90,
     'SCREENSHOT': 0.90,
     'ISO_DATETIME': 0.90,
 
     // Medium-high: Clear structured formats
-    'ISO_DATE': 0.85,
+    'ISO_DATE': CONFIDENCE.HIGH,
     'EUROPEAN_DATE': 0.75,
     'US_DATE': 0.75,
     'FRENCH_TIME': 0.80,
-    'COMPACT_DATETIME': 0.70,
+    'COMPACT_DATETIME': CONFIDENCE.MEDIUM_HIGH,
 
     // Medium: Less specific
     'COMPACT_EUROPEAN': 0.65,
     'COMPACT_US': 0.65,
-    'COMPACT_AMBIGUOUS': 0.50, // Ambiguous by definition
+    'COMPACT_AMBIGUOUS': CONFIDENCE.MEDIUM, // Ambiguous by definition
 
     // Lower: Generic patterns
     'SEPARATED_DATETIME': 0.60,
-    'YEAR_MONTH': 0.50,
+    'YEAR_MONTH': CONFIDENCE.MEDIUM,
     'YEAR_ONLY': 0.40,
-    'MERGED_DATETIME': 0.70,
+    'MERGED_DATETIME': CONFIDENCE.MEDIUM_HIGH,
   };
 
-  const specificityScore = specificityScores[timestamp.type] || 0.50;
+  const specificityScore = specificityScores[timestamp.type] || CONFIDENCE.MEDIUM;
   confidence = specificityScore;
 
   // Factor 2: Precision bonus (up to +0.15)
   const precisionBonus = {
     'millisecond': 0.15,
-    'second': 0.10,
+    'second': CONFIDENCE.BOOST_PRECISION,
     'minute': 0.05,
     'day': 0.02,
     'month': 0.01,
@@ -1039,9 +1021,9 @@ function calculateConfidence(timestamp, filename) {
   const filenameLength = filename.length;
   const relativePosition = timestamp.start / filenameLength;
   if (relativePosition < 0.3) {
-    confidence += 0.10; // Early in filename
+    confidence += CONFIDENCE.BOOST_EARLY; // Early in filename
   } else if (relativePosition < 0.5) {
-    confidence += 0.05; // Middle
+    confidence += CONFIDENCE.BOOST_MIDDLE; // Middle
   }
 
   // Factor 4: Validation success (components are valid) (+0.05)
@@ -1054,7 +1036,7 @@ function calculateConfidence(timestamp, filename) {
     (!timestamp.second || (timestamp.second >= 0 && timestamp.second < 60));
 
   if (hasValidComponents) {
-    confidence += 0.05;
+    confidence += CONFIDENCE.BOOST_CONTEXT;
   }
 
   // Factor 5: Context markers (keywords that suggest timestamps) (+0.10)
@@ -1067,12 +1049,12 @@ function calculateConfidence(timestamp, filename) {
 
   const hasContextMarker = contextMarkers.some(marker => marker.test(filename));
   if (hasContextMarker) {
-    confidence += 0.10;
+    confidence += CONFIDENCE.BOOST_PRECISION;
   }
 
   // Factor 6: Penalty for ambiguity (-0.20)
   if (timestamp.ambiguous) {
-    confidence -= 0.20;
+    confidence -= CONFIDENCE.PENALTY_AMBIGUOUS;
   }
 
   // Clamp to [0, 1]

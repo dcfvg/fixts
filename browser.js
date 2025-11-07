@@ -51,8 +51,6 @@ export {
 // Ambiguity detection (browser-safe, no Node.js dependencies)
 export { detectAmbiguity } from './src/utils/ambiguityDetector-browser.js';
 
-export { detectPattern } from './src/utils/fileGrouper.js';
-
 // Batch processing API (browser-safe, high-performance)
 export {
   parseTimestampBatch,

@@ -10,6 +10,8 @@
  * @module customPatternManager
  */
 
+import { CONFIDENCE } from '../config/constants.js';
+
 /**
  * Registry of custom patterns
  * @private
@@ -203,7 +205,7 @@ export function applyCustomPatterns(filename, _options = {}) {
           customPattern: pattern.name,
           start: match.index,
           end: match.index + match[0].length,
-          confidence: 0.85  // Custom patterns get high confidence
+          confidence: CONFIDENCE.HIGH  // Custom patterns get high confidence
         };
       }
     } catch {

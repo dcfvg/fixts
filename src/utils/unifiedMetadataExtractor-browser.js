@@ -17,6 +17,7 @@
 import { parseTimestamp } from './timestampParser.js';
 import { parseTimestampFromEXIF, parseTimestampFromAudio } from './fileMetadataParser-browser.js';
 import { getBasename, getExtension } from './path-utils.js';
+import { CONFIDENCE } from '../config/constants.js';
 
 /**
  * Timestamp source types (browser-safe subset)
@@ -139,7 +140,7 @@ async function extractFromFilename(basename, options) {
 
   return {
     timestamp,
-    confidence: parsed?.confidence || 0.70,
+    confidence: parsed?.confidence || CONFIDENCE.MEDIUM_HIGH,
     details: {
       method: 'heuristic'
     }
@@ -163,7 +164,7 @@ async function extractFromEXIF(filepath, isFileObject) {
 
   return {
     timestamp,
-    confidence: 0.95, // EXIF data is highly reliable
+    confidence: CONFIDENCE.VERY_HIGH, // EXIF data is highly reliable
     details: {
       source: 'EXIF metadata'
     }
@@ -187,7 +188,7 @@ async function extractFromAudio(filepath, isFileObject) {
 
   return {
     timestamp,
-    confidence: 0.90, // Audio metadata is reliable
+    confidence: 0.90, // Audio metadata is reliable (between VERY_HIGH and HIGH)
     details: {
       source: 'Audio tags'
     }
