@@ -23,12 +23,20 @@ export interface TimestampInfo {
 }
 
 export interface DetectionInfo {
+  custom: {
+    detected: boolean;
+    timestamp: TimestampInfo | null;
+    date: Date | null;
+    pattern?: string;
+    type?: string;
+    precision?: string;
+  };
   heuristic: {
     detected: boolean;
     timestamp: TimestampInfo | null;
     date: Date | null;
-    type: string | null;
-    precision: string | null;
+    type?: string;
+    precision?: string;
   };
 }
 
@@ -40,8 +48,9 @@ export interface DefinedComponents {
 }
 
 export interface ParseOptions {
-  method?: 'heuristic' | 'auto';
   dateFormat?: 'dmy' | 'mdy';
+  allowTimeOnly?: boolean;
+  customOnly?: boolean;
   timeShiftMs?: number;
 }
 
@@ -85,11 +94,6 @@ export function parseTimestampFromName(
 ): Date | null;
 
 export function getDetectionInfo(filename: string): DetectionInfo;
-
-export const DETECTION_METHOD: {
-  HEURISTIC: 'heuristic';
-  AUTO: 'auto';
-};
 
 // Heuristic detection
 export function getBestTimestamp(

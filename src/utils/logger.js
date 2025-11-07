@@ -15,10 +15,11 @@ export const LogLevel = {
 
 /**
  * Logger configuration
+ * Browser-safe: checks for process existence before accessing
  */
 const config = {
-  level: process.env.LOG_LEVEL || LogLevel.INFO,
-  silent: process.env.NODE_ENV === 'test',
+  level: (typeof process !== 'undefined' && process.env?.LOG_LEVEL) || LogLevel.INFO,
+  silent: (typeof process !== 'undefined' && process.env?.NODE_ENV === 'test') || false,
   timestamp: true
 };
 

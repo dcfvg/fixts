@@ -54,7 +54,7 @@
   },
   "homepage": "https://github.com/dcfvg/fixts#readme",
   "engines": {
-    "node": ">=14.0.0"
+    "node": ">=18.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.0",
