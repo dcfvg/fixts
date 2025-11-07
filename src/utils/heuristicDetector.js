@@ -1053,11 +1053,42 @@ export function formatTimestamp(timestamp) {
 
 /**
  * Convert timestamp to Date object for compatibility with existing code
+ * @param {Object} timestamp - Parsed timestamp object
+ * @param {Object} options - Conversion options
+ * @param {boolean} options.allowTimeOnly - Allow time-only patterns (uses current date)
+ * @returns {Date|null}
  */
-export function timestampToDate(timestamp) {
+export function timestampToDate(timestamp, options = {}) {
   if (!timestamp) return null;
 
-  // Skip time-only patterns (no year)
+  // Handle time-only patterns if allowed
+  if (!timestamp.year && options.allowTimeOnly) {
+    // Time-only: use current date
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const day = now.getDate();
+    const hour = timestamp.hour || 0;
+    const minute = timestamp.minute || 0;
+    const second = timestamp.second || 0;
+    const millisecond = timestamp.millisecond || 0;
+
+    // Validate time ranges
+    if (hour < 0 || hour > 23) return null;
+    if (minute < 0 || minute > 59) return null;
+    if (second < 0 || second > 59) return null;
+
+    const date = new Date(year, month, day, hour, minute, second, millisecond);
+    if (Number.isNaN(date.getTime())) return null;
+
+    // Mark as time-only
+    date.precision = 'time';
+    date.timeOnly = true;
+
+    return date;
+  }
+
+  // Skip time-only patterns (no year) by default
   if (!timestamp.year) return null;
 
   const year = timestamp.year;

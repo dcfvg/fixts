@@ -25,16 +25,17 @@ export const DETECTION_METHOD = {
  * @param {Object} options - Parsing options
  * @param {string} options.method - Detection method: 'heuristic' or 'auto' (default)
  * @param {string} options.dateFormat - Date format for ambiguous dates: 'dmy' or 'mdy' (default: 'dmy')
+ * @param {boolean} options.allowTimeOnly - Allow time-only formats (uses current date) (default: false)
  * @returns {Date|null} - Parsed date or null if no timestamp found
  */
 export function parseTimestamp(filename, options = {}) {
-  const { dateFormat = 'dmy' } = options;
+  const { dateFormat = 'dmy', allowTimeOnly = false } = options;
 
   if (!filename || typeof filename !== 'string') {
     return null;
   }
 
-  return parseWithHeuristic(filename, { dateFormat });
+  return parseWithHeuristic(filename, { dateFormat, allowTimeOnly });
 }
 
 /**
@@ -42,9 +43,9 @@ export function parseTimestamp(filename, options = {}) {
  * @private
  */
 function parseWithHeuristic(filename, options = {}) {
-  const { dateFormat = 'dmy' } = options;
+  const { dateFormat = 'dmy', allowTimeOnly = false } = options;
   const timestamp = getBestTimestamp(filename, { dateFormat });
-  return timestampToDate(timestamp);
+  return timestampToDate(timestamp, { allowTimeOnly });
 }
 
 /**
