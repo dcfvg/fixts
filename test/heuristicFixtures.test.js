@@ -2,7 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert';
 import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { parseTimestamp, getDetectionInfo, DETECTION_METHOD } from '../src/utils/timestampParser.js';
+import { parseTimestamp, getDetectionInfo } from '../src/utils/timestampParser.js';
 
 describe('Heuristic Detection on Fixtures', () => {
   const fixturesDir = join(process.cwd(), 'test/integration/fixtures');
@@ -14,7 +14,7 @@ describe('Heuristic Detection on Fixtures', () => {
       let notDetected = 0;
 
       files.forEach((filename) => {
-        const result = parseTimestamp(filename, { method: DETECTION_METHOD.AUTO });
+        const result = parseTimestamp(filename);
         if (result) {
           detected++;
         } else {
@@ -38,7 +38,7 @@ describe('Heuristic Detection on Fixtures', () => {
       const notDetectedFiles = [];
 
       files.forEach((filename) => {
-        const result = parseTimestamp(filename, { method: DETECTION_METHOD.HEURISTIC });
+        const result = parseTimestamp(filename);
         if (result) {
           detected++;
         } else {
@@ -66,7 +66,7 @@ describe('Heuristic Detection on Fixtures', () => {
       let notDetected = 0;
 
       files.forEach((filename) => {
-        const result = parseTimestamp(filename, { method: DETECTION_METHOD.REGEX });
+        const result = parseTimestamp(filename);
         if (result) {
           detected++;
         } else {
@@ -123,7 +123,7 @@ describe('Heuristic Detection on Fixtures', () => {
       let heuristicCorrect = 0;
 
       twoDigitYearFiles.forEach((filename) => {
-        const hResult = parseTimestamp(filename, { method: DETECTION_METHOD.HEURISTIC });
+        const hResult = parseTimestamp(filename);
 
         // Assuming files are from recent years (2020+)
         if (hResult && hResult.getFullYear() >= 2020) heuristicCorrect++;
@@ -152,7 +152,7 @@ describe('Heuristic Detection on Fixtures', () => {
       let withTime = 0;
 
       compactFiles.forEach((filename) => {
-        const result = parseTimestamp(filename, { method: DETECTION_METHOD.HEURISTIC });
+        const result = parseTimestamp(filename);
         if (result) {
           detected++;
           // Check if time components are detected
@@ -171,7 +171,7 @@ describe('Heuristic Detection on Fixtures', () => {
     it('should detect WhatsApp format with "at" separator', () => {
       // Test WhatsApp-style format
       const testFile = 'WhatsApp Image 2021-08-01 at 13.15.13.jpeg';
-      const result = parseTimestamp(testFile, { method: DETECTION_METHOD.HEURISTIC });
+      const result = parseTimestamp(testFile);
 
       if (result) {
         console.log('\n  WhatsApp format: ✅ Detected');
@@ -209,7 +209,7 @@ describe('Heuristic Detection on Fixtures', () => {
       ];
 
       testCases.forEach(({ filename, expected }) => {
-        const result = parseTimestamp(filename, { method: DETECTION_METHOD.HEURISTIC });
+        const result = parseTimestamp(filename);
 
         if (result) {
           console.log(`\n  ${filename}: ✅ Detected`);
@@ -237,12 +237,12 @@ describe('Heuristic Detection on Fixtures', () => {
 
       // Heuristic timing
       const hStart = Date.now();
-      sampleFiles.forEach((f) => parseTimestamp(f, { method: DETECTION_METHOD.HEURISTIC }));
+      sampleFiles.forEach((f) => parseTimestamp(f));
       const hTime = Date.now() - hStart;
 
       // Regex timing
       const rStart = Date.now();
-      sampleFiles.forEach((f) => parseTimestamp(f, { method: DETECTION_METHOD.REGEX }));
+      sampleFiles.forEach((f) => parseTimestamp(f));
       const rTime = Date.now() - rStart;
 
       console.log(`\n  Performance (${sampleSize} files):`);

@@ -472,8 +472,14 @@ function findItemsWithTimestamps(dirPath, format = 'yyyy-mm-dd hh.MM.ss', parsin
     const newName = generateNewName(item, format, parsingOptions);
     if (newName) {
       if (newName !== item) {
-        // Store both path and pre-calculated newName
-        toRename.push({ path: fullPath, newName, oldName: item });
+        // For directories, only rename if 'dir' keyword is explicitly included
+        if (stats.isDirectory() && !includeDirectories) {
+          // Skip directory renaming unless 'dir' is in includeExt
+          // Still need to recurse into it for file matching
+        } else {
+          // Store both path and pre-calculated newName
+          toRename.push({ path: fullPath, newName, oldName: item });
+        }
       } else {
         alreadyFormatted.push(fullPath);
       }

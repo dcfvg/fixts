@@ -3,7 +3,6 @@ import assert from 'node:assert';
 import { mkdirSync, writeFileSync, rmSync, readdirSync, existsSync } from 'fs';
 import { join } from 'path';
 import { processPath } from '../src/core/renamer.js';
-import { DETECTION_METHOD } from '../src/utils/timestampParser.js';
 
 const TEST_DIR = join(process.cwd(), 'test-temp-renamer');
 
@@ -136,7 +135,7 @@ describe('renamer - directories', () => {
     const dirPath = join(TEST_DIR, 'recording 07-10-2025,11-09');
     mkdirSync(dirPath);
 
-    const result = processPath(dirPath, { dryRun: false, method: DETECTION_METHOD.REGEX });
+    const result = processPath(dirPath, { dryRun: false });
 
     assert.strictEqual(result.success, true);
     assert.ok(result.newPath.includes('2025-10-07'));

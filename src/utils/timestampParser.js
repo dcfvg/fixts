@@ -13,20 +13,10 @@ import {
 import { applyCustomPatterns } from './customPatternManager.js';
 
 /**
- * Detection methods
- */
-export const DETECTION_METHOD = {
-  HEURISTIC: 'heuristic',
-  AUTO: 'auto', // Same as heuristic (for compatibility)
-  CUSTOM: 'custom', // Custom patterns only
-};
-
-/**
- * Parse timestamp from filename using specified method
+ * Parse timestamp from filename using heuristic detection
  *
  * @param {string} filename - Filename to parse
  * @param {Object} options - Parsing options
- * @param {string} options.method - Detection method: 'heuristic', 'auto', or 'custom' (default: 'auto')
  * @param {string} options.dateFormat - Date format for ambiguous dates: 'dmy' or 'mdy' (default: 'dmy')
  * @param {boolean} options.allowTimeOnly - Allow time-only formats (uses current date) (default: false)
  * @param {boolean} options.customOnly - Only use custom patterns, skip heuristic (default: false)

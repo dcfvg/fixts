@@ -10,7 +10,6 @@
  * @module unifiedMetadataExtractor
  */
 
-import { parseTimestamp } from './timestampParser.js';
 import { parseTimestampFromEXIF, parseTimestampFromAudio } from './fileMetadataParser.js';
 import { getBasename, getExtension } from './path-utils.js';
 import fs from 'node:fs';
@@ -160,20 +159,26 @@ export async function extractTimestamp(filepath, options = {}) {
  * @private
  */
 async function extractFromFilename(basename, options) {
-  const timestamp = parseTimestamp(basename, options);
+  // Use getBestTimestamp to get full detection object with confidence
+  const { getBestTimestamp, timestampToDate } = await import('./heuristicDetector.js');
+
+  const detection = getBestTimestamp(basename, options);
+  if (!detection) {
+    return null;
+  }
+
+  const timestamp = timestampToDate(detection, options);
   if (!timestamp) {
     return null;
   }
 
-  // Get confidence from detection info
-  const { parseTimestampFromName } = await import('./timestampParser.js');
-  const parsed = parseTimestampFromName(basename, options);
-
   return {
     timestamp,
-    confidence: parsed?.confidence || 0.70,
+    confidence: detection.confidence || 0.70,
     details: {
-      method: 'heuristic'
+      method: 'heuristic',
+      type: detection.type,
+      precision: detection.precision
     }
   };
 }

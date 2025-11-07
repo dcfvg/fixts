@@ -2,13 +2,12 @@
 export { formatDate, extractAndFormat, generateNewName } from './src/core/formatter.js';
 export { rename } from './src/core/renamer.js';
 
-// Timestamp parsing (heuristic + regex)
+// Timestamp parsing (heuristic)
 export {
   parseTimestamp,
   parseTimestampFromFilename,
   parseTimestampFromName,
   getDetectionInfo,
-  DETECTION_METHOD,
 } from './src/utils/timestampParser.js';
 
 // File metadata extraction (EXIF, audio tags)

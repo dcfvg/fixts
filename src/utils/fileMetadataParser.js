@@ -29,18 +29,18 @@ async function parseTimestampFromEXIF(file) {
     let tags;
 
     // Handle File object (browser) or file path (Node.js)
-    if (file instanceof File) {
+    if (typeof file === 'string') {
+      // Node.js: file path
+      const fs = await import('node:fs');
+      const fileBuffer = await fs.promises.readFile(file);
+      tags = ExifReader.load(fileBuffer, { expanded: true });
+    } else if (file instanceof File) {
       // Browser: File object
       if (!file.type.startsWith('image/')) {
         return null;
       }
       const arrayBuffer = await file.arrayBuffer();
       tags = ExifReader.load(arrayBuffer, { expanded: true });
-    } else if (typeof file === 'string') {
-      // Node.js: file path
-      const fs = await import('node:fs');
-      const fileBuffer = await fs.promises.readFile(file);
-      tags = ExifReader.load(fileBuffer, { expanded: true });
     } else {
       return null;
     }
@@ -103,21 +103,20 @@ async function parseTimestampFromAudio(file) {
     return null;
   }
 
-  // Only process audio files in browser
-  if (file instanceof File && !file.type.startsWith('audio/')) {
-    return null;
-  }
-
   try {
     let metadata;
 
     // Handle File object (browser) or file path (Node.js)
-    if (file instanceof File) {
-      // Browser: Use parseBlob
-      metadata = await parseBlob(file);
-    } else if (typeof file === 'string') {
+    if (typeof file === 'string') {
       // Node.js: Use parseFile (renamed to parseAudioFile to avoid conflict)
       metadata = await parseAudioFile(file);
+    } else if (file instanceof File) {
+      // Browser: Use parseBlob
+      // Only process audio files in browser
+      if (!file.type.startsWith('audio/')) {
+        return null;
+      }
+      metadata = await parseBlob(file);
     } else {
       return null;
     }

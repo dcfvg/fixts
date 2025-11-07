@@ -1,7 +1,9 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { formatDate, generateNewName } from '../src/core/formatter.js';
-import { parseTimestampFromName, parseTimestamp, DETECTION_METHOD } from '../src/utils/timestampParser.js';
+import { formatDate, extractAndFormat, generateNewName } from '../src/core/formatter.js';
+import { formatTimestamp } from '../src/utils/heuristicDetector.js';
+import { createDate } from '../src/utils/dateUtils.js';
+import { parseTimestampFromName, parseTimestamp } from '../src/utils/timestampParser.js';
 
 describe('timestampUtils', () => {
   describe('parseTimestampFromName', () => {
@@ -70,8 +72,8 @@ describe('timestampUtils', () => {
     });
 
     it('should parse European format with comma separator', () => {
-      // Comma-separated datetime requires regex mode (heuristic doesn't handle comma as datetime separator)
-      const result = parseTimestamp('recording 07-10-2025,11-09.wav', { method: DETECTION_METHOD.REGEX });
+      // Comma-separated datetime is handled by heuristic detection
+      const result = parseTimestamp('recording 07-10-2025,11-09.wav');
       assert.ok(result instanceof Date);
       assert.strictEqual(result.getFullYear(), 2025);
       assert.strictEqual(result.getMonth(), 9); // October is 9
@@ -143,8 +145,8 @@ describe('formatter', () => {
     });
 
     it('should generate new name for comma-separated format', () => {
-      // Comma-separated datetime requires regex mode
-      const result = generateNewName('recording 07-10-2025,11-09.wav', 'yyyy-mm-dd hh.MM.ss', { method: DETECTION_METHOD.REGEX });
+      // Comma-separated datetime is handled by heuristic detection
+      const result = generateNewName('recording 07-10-2025,11-09.wav', 'yyyy-mm-dd hh.MM.ss');
       assert.ok(result.includes('2025-10-07'));
       assert.ok(result.includes('11.09'));
       assert.ok(result.includes('recording'));

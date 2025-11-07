@@ -84,7 +84,9 @@ function selectDateByPreference(dates, preferredSource = 'content') {
     return dates.find(d => d.source === 'creation time') || null;
   case 'content':
     // Strict: embedded metadata from file content only (EXIF/ID3/etc.), no fallback to filesystem timestamps
-    return dates.find(d => !d.source.includes('time')) || null;
+    // Exclude only filesystem timestamps: 'creation time' and 'modification time'
+    // But INCLUDE embedded metadata even if label contains 'time' (e.g., 'EXIF (DateTimeOriginal)')
+    return dates.find(d => d.source !== 'creation time' && d.source !== 'modification time') || null;
   case 'earliest':
   default:
     // Permissive: sort by timestamp and return earliest (includes both embedded metadata and creation time)

@@ -5,8 +5,7 @@ export {
   parseTimestamp,
   parseTimestampFromFilename,
   parseTimestampFromName,
-  getDetectionInfo,
-  DETECTION_METHOD
+  getDetectionInfo
 } from './src/utils/timestampParser.js';
 
 export {
