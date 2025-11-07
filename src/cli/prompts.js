@@ -1,3 +1,11 @@
+/* Node.js-only module - uses readline */
+/**
+ * @module prompts
+ * @browserSafe false
+ * @requires readline
+ * @description User prompts for CLI
+ */
+
 import { createInterface } from 'readline';
 
 /**

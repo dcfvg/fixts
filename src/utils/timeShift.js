@@ -1,5 +1,8 @@
+/* Browser-safe module ✓ */
 /**
- * Time Shift Utilities
+ * @module timeShift
+ * @browserSafe true
+ * @description Time Shift Utilities
  *
  * Parse and apply time shifts to timestamps for correcting camera clock errors,
  * timezone issues, or daylight saving time problems.

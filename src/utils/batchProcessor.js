@@ -1,5 +1,8 @@
+/* Browser-safe module ✓ */
 /**
- * Batch Processing API for high-performance bulk timestamp parsing
+ * @module batchProcessor
+ * @browserSafe true
+ * @description Batch Processing API for high-performance bulk timestamp parsing
  *
  * Optimizations:
  * - Pattern caching for similar filenames

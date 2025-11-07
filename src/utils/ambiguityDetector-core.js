@@ -1,3 +1,4 @@
+/* Browser-safe module ✓ */
 /**
  * Core ambiguity detection logic (platform-agnostic)
  *
@@ -7,6 +8,9 @@
  * Platform-specific features (like CLI prompts) are in separate modules:
  * - ambiguityDetector.js (Node.js with readline prompts)
  * - ambiguityDetector-browser.js (browser-safe re-export)
+ *
+ * @module ambiguityDetector-core
+ * @browserSafe true
  */
 
 import { getBestTimestamp } from './heuristicDetector.js';

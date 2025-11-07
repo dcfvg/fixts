@@ -1,5 +1,8 @@
+/* Browser-safe module ✓ */
 /**
- * Centralized logging utility
+ * @module logger
+ * @browserSafe true
+ * @description Centralized logging utility
  * Provides consistent logging with level control and formatting
  */
 

@@ -1,6 +1,12 @@
 #!/usr/bin/env node
 
+/* Node.js-only module - CLI entry point */
 /**
+ * @module cli
+ * @browserSafe false
+ * @requires fs
+ * @requires path
+ * @description CLI entry point
  * NOTE: This CLI entry point is Node.js-specific by design.
  * Phase 3 architecture: Core logic in ../core/ is execution-agnostic where possible.
  * FileSystemAdapter pattern available in ../adapters/ for future platform extensions.

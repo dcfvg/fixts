@@ -1,5 +1,8 @@
+/* Browser-safe module ✓ */
 /**
- * Global constants for the fixts utility
+ * @module constants
+ * @browserSafe true
+ * @description Global constants for the fixts utility
  */
 
 /**

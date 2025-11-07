@@ -1,10 +1,15 @@
-import { statSync } from 'fs';
-import { detectAmbiguity } from './ambiguityDetector.js';
-
+/* Node.js-only module - uses fs */
 /**
+ * @module smartAmbiguityResolver
+ * @browserSafe false
+ * @requires fs
+ * @description Smart ambiguity resolution using file metadata
  * NOTE: This file uses statSync for file metadata, Node.js-specific.
  * Core ambiguity resolution logic could be separated for browser use if needed.
  */
+
+import { statSync } from 'fs';
+import { detectAmbiguity } from './ambiguityDetector.js';
 
 /**
  * Calculate confidence score for a date interpretation based on file mtime

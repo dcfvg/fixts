@@ -1,9 +1,13 @@
+/* Browser-safe module ✓ */
 /**
  * Browser-safe metadata parser - ONLY handles File API
  * No Node.js dependencies (no node:fs, no music-metadata parseFile)
  *
  * This module is safe to bundle with Vite/Webpack for browser usage.
  * For Node.js usage, import from fileMetadataParser.js instead.
+ *
+ * @module fileMetadataParser-browser
+ * @browserSafe true
  */
 
 import ExifReader from 'exifreader';

@@ -1,9 +1,12 @@
-import { DATE_LIMITS } from '../config/constants.js';
-
+/* Browser-safe module ✓ */
 /**
- * Centralized date/time validation functions
+ * @module dateValidators
+ * @browserSafe true
+ * @description Centralized date/time validation functions
  * Provides consistent validation logic across the entire codebase
  */
+
+import { DATE_LIMITS } from '../config/constants.js';
 
 /**
  * Check if a year is a leap year

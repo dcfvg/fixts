@@ -1,5 +1,8 @@
+/* Browser-safe module ✓ */
 /**
- * Pure JavaScript Path Utilities
+ * @module path-utils
+ * @browserSafe true
+ * @description Pure JavaScript Path Utilities
  * Browser-safe alternatives to Node.js 'path' module
  *
  * These utilities work in any JavaScript environment (Node.js, browsers, Deno, Bun)

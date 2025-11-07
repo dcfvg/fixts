@@ -1,5 +1,8 @@
+/* Browser-safe module ✓ */
 /**
- * Unified timestamp parser - uses heuristic detection
+ * @module timestampParser
+ * @browserSafe true
+ * @description Unified timestamp parser - uses heuristic detection
  * Use this module for all filename-based timestamp parsing
  *
  * For file metadata (EXIF, audio tags), use fileMetadataParser.js instead

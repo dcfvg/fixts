@@ -1,3 +1,15 @@
+/* Node.js-only module - uses readline */
+/**
+ * Ambiguity detection with CLI prompts (Node.js only)
+ *
+ * This module provides interactive ambiguity resolution using Node.js readline.
+ * For browser-safe ambiguity detection, use ambiguityDetector-browser.js
+ *
+ * @module ambiguityDetector
+ * @browserSafe false
+ * @requires readline
+ */
+
 import readline from 'readline';
 
 // Import and re-export core detection logic

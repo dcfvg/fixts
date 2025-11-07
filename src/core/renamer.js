@@ -1,3 +1,11 @@
+/* Node.js-only module - uses fs and path */
+/**
+ * @module renamer
+ * @browserSafe false
+ * @requires fs
+ * @requires path
+ */
+
 import { join, dirname, basename, relative } from 'path';
 import { readdirSync, statSync, renameSync, copyFileSync, mkdirSync, existsSync, utimesSync, writeFileSync } from 'fs';
 import { generateNewName } from './formatter.js';

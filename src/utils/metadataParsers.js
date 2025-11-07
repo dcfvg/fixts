@@ -1,3 +1,11 @@
+/* Node.js-only module - delegates to metadataParsers-core.js and fileMetadataParser.js */
+/**
+ * @module metadataParsers
+ * @browserSafe false
+ * @requires fileMetadataParser
+ * @description Node.js wrapper for metadata parsing (delegates to core + file system)
+ */
+
 import { parseDateString, parseEXIFDateTime } from './dateUtils.js';
 
 /**

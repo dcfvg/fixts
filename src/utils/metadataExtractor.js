@@ -1,3 +1,12 @@
+/* Node.js-only module - uses fs and child_process */
+/**
+ * @module metadataExtractor
+ * @browserSafe false
+ * @requires fs
+ * @requires child_process
+ * @description Legacy metadata extraction (use unifiedMetadataExtractor instead)
+ */
+
 import { statSync, openSync, readSync, closeSync } from 'fs';
 import { exec } from 'child_process';
 import { promisify } from 'util';

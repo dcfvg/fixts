@@ -1,9 +1,15 @@
+/* Node.js-only module - uses fs and music-metadata */
 /**
  * Extract timestamps from file metadata (EXIF, audio tags, video metadata)
  * For filename parsing, use timestampParser.js instead
  *
  * Uses ExifReader for robust, well-tested EXIF parsing across platforms
  * Uses music-metadata for robust, well-tested audio metadata parsing across platforms
+ *
+ * @module fileMetadataParser
+ * @browserSafe false
+ * @requires node:fs
+ * @requires music-metadata
  */
 
 import ExifReader from 'exifreader';

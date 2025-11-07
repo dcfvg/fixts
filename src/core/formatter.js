@@ -1,3 +1,10 @@
+/* Browser-safe module ✓ */
+/**
+ * @module formatter
+ * @browserSafe true
+ * @description Name formatting logic (platform-agnostic)
+ */
+
 import { parseTimestampFromName } from '../utils/timestampParser.js';
 import { applyCleaningPatterns } from '../config/cleaningPatterns.js';
 import { FILE_EXTENSIONS } from '../config/constants.js';

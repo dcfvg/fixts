@@ -1,5 +1,8 @@
+/* Browser-safe module ✓ */
 /**
- * Context-Aware Ambiguity Resolution
+ * @module contextualResolver
+ * @browserSafe true
+ * @description Context-Aware Ambiguity Resolution
  *
  * Analyzes multiple filenames together to automatically determine
  * the most likely date format (DD-MM vs MM-DD) based on patterns

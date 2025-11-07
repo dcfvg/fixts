@@ -1,5 +1,9 @@
+/* Node.js-only module - uses ambiguityDetector (which uses readline) */
 /**
- * Group files by timestamp patterns and metadata sources
+ * @module fileGrouper
+ * @browserSafe false
+ * @requires ambiguityDetector
+ * @description Group files by timestamp patterns and metadata sources
  * This helps provide a clear overview when processing mixed directories
  */
 

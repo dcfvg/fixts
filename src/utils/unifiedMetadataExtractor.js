@@ -1,13 +1,17 @@
+/* Node.js-only module - uses fs, path, url */
 /**
- * Unified Metadata Extractor
+ * @module unifiedMetadataExtractor
+ * @browserSafe false
+ * @requires node:fs
+ * @requires node:path
+ * @requires node:url
+ * @description Unified Metadata Extractor
  *
  * Provides a single, consistent interface for extracting timestamps from multiple sources:
  * - Filename patterns
  * - EXIF data (photos)
  * - Audio metadata (MP3, M4A, etc.)
  * - File system metadata (mtime, birthtime)
- *
- * @module unifiedMetadataExtractor
  */
 
 import { parseTimestampFromEXIF, parseTimestampFromAudio } from './fileMetadataParser.js';

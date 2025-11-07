@@ -1,3 +1,4 @@
+/* Browser-safe module ✓ */
 /**
  * Core metadata parsing logic (platform-agnostic)
  *
@@ -7,6 +8,9 @@
  * Platform-specific file loading is handled by:
  * - fileMetadataParser.js (Node.js with fs.readFile)
  * - fileMetadataParser-browser.js (browser with File API)
+ *
+ * @module metadataParsers-core
+ * @browserSafe true
  */
 
 import { parseEXIFDateTime } from './dateUtils.js';

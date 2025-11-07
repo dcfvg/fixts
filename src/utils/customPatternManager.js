@@ -1,5 +1,8 @@
+/* Browser-safe module ✓ */
 /**
- * Custom Pattern Manager
+ * @module customPatternManager
+ * @browserSafe true
+ * @description Custom Pattern Manager
  *
  * Allows users to register custom timestamp patterns for their specific use cases.
  * Patterns are checked before the standard heuristic detection.

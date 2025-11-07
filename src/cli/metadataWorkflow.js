@@ -1,3 +1,12 @@
+/* Node.js-only module - uses renamer and prompts */
+/**
+ * @module metadataWorkflow
+ * @browserSafe false
+ * @requires ../core/renamer
+ * @requires ./prompts
+ * @description CLI workflow for metadata-based renaming
+ */
+
 import { renameUsingMetadata } from '../core/renamer.js';
 import { promptConfirmation } from './prompts.js';
 

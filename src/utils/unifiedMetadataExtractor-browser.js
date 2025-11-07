@@ -1,5 +1,8 @@
+/* Browser-safe module ✓ */
 /**
- * Unified Metadata Extractor (Browser-Safe)
+ * @module unifiedMetadataExtractor-browser
+ * @browserSafe true
+ * @description Unified Metadata Extractor (Browser-Safe)
  *
  * Provides a single, consistent interface for extracting timestamps from multiple sources:
  * - Filename patterns

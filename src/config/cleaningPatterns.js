@@ -1,5 +1,8 @@
+/* Browser-safe module ✓ */
 /**
- * Generic cleaning for filename composition artifacts
+ * @module cleaningPatterns
+ * @browserSafe true
+ * @description Generic cleaning for filename composition artifacts
  * Philosophy: Remove ONLY technical artifacts, preserve semantic content
  * Avoid specific patterns - use heuristic rules instead
  */

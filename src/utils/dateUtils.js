@@ -1,3 +1,10 @@
+/* Browser-safe module ✓ */
+/**
+ * @module dateUtils
+ * @browserSafe true
+ * @description Date utility functions and formatters (platform-agnostic)
+ */
+
 import { DATE_LIMITS } from '../config/constants.js';
 import {
   isValidYear,

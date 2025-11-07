@@ -1,5 +1,8 @@
+/* Browser-safe module ✓ */
 /**
- * Heuristic-Based Timestamp Detection
+ * @module heuristicDetector
+ * @browserSafe true
+ * @description Heuristic-Based Timestamp Detection
  *
  * Alternative to heavy regex patterns - uses component validation approach:
  * 1. Detect digit sequences (2, 4, 6, 8, 10, 12, 13, 14 digits)
