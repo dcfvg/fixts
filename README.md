@@ -24,6 +24,7 @@ fixts (fix timestamps) scans your files and folders, detects various timestamp f
 - 📸 **Metadata Extraction** - Extract dates from EXIF, creation time, etc.
 - 🧙 **Wizard Mode** - Interactive disambiguation for edge cases
 - ↩️ **Revert Script** - Undo operations with generated scripts
+- 🌐 **Browser Support** - Use in web apps via `fixts/browser` entry point
 
 ---
 
@@ -290,51 +291,65 @@ fixts ~/Archive --format "yyyy-mm-dd" --execute
 
 ---
 
+## Browser Usage
+
+FixTS can be used in browser environments for web applications! See the complete guide: [Browser Usage Documentation](./docs/BROWSER_USAGE.md)
+
+### Quick Example
+
+```javascript
+import {
+  parseTimestampFromName,
+  parseTimestampFromEXIF,
+  parseTimestampFromAudio
+} from 'fixts/browser';
+
+// Parse from filename
+const date = parseTimestampFromName('IMG_20240315_143025.jpg');
+
+// Parse from image EXIF (requires File API)
+const imageFile = document.querySelector('input[type="file"]').files[0];
+const exifDate = await parseTimestampFromEXIF(imageFile);
+
+// Parse from audio metadata (requires File API)
+const audioFile = document.querySelector('input[type="file"]').files[0];
+const audioDate = await parseTimestampFromAudio(audioFile);
+```
+
+**What works in browsers:**
+- ✅ Filename timestamp parsing
+- ✅ EXIF metadata extraction (JPEG, PNG, HEIC, etc.)
+- ✅ Audio metadata extraction (MP3, M4A, OGG, WAV, AIFF)
+- ✅ Date formatting and validation
+- ✅ Name generation utilities
+
+**Browser limitations:**
+- ❌ No file system access (can't recursively scan directories)
+- ❌ Can't rename files on disk (can only suggest new names)
+
+For a complete migration guide from copied code to npm package, see: [diapaudio Migration Guide](./docs/DIAPAUDIO_MIGRATION.md)
+
+---
+
 ## Testing
 
 ```bash
-# Run unit tests
+# Run all tests
 npm test
 
 # Run integration tests
 npm run test:integration
 
-# Run all tests (lint + unit + integration)
-npm run test:all
-
 # Lint check
 npm run lint
 
-# Full verification with summary
+# Full verification
 npm run verify
 ```
-
----
-
-## Development & Publishing
-
-### Quick Reference
-
-```bash
-# Test before publishing
-npm run publish:test  # Create tarball after tests (for local verification)
-npm run publish:safe  # Show package details
-
-# Publish new version (with automatic testing)
-npm run version:patch  # Bug fixes (1.0.2 → 1.0.3)
-npm run version:minor  # New features (1.0.2 → 1.1.0)
-npm run version:major  # Breaking changes (1.0.2 → 2.0.0)
-```
-
-All version commands automatically:
-1. Run full test suite (lint + unit tests + integration tests)
-2. Bump version number
-3. Create git tag
-4. Push to GitHub
-5. Publish to npm
 
 ---
 
 ## License
 
 GNU General Public License v3.0 or later - see [LICENSE](./LICENSE) file for details.
+

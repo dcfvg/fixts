@@ -21,6 +21,12 @@ export {
   parseEXIFDateTime
 } from './src/utils/dateUtils.js';
 
+// File metadata extraction (requires File API - browser File objects)
+export {
+  parseTimestampFromEXIF,
+  parseTimestampFromAudio
+} from './src/utils/fileMetadataParser.js';
+
 export { applyCleaningPatterns } from './src/config/cleaningPatterns.js';
 
 export {

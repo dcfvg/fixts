@@ -4,6 +4,11 @@
   "description": "CLI tool to normalize filenames and folders with timestamps to a consistent format",
   "main": "index.js",
   "type": "module",
+  "exports": {
+    ".": "./index.js",
+    "./browser": "./browser.js",
+    "./browser.js": "./browser.js"
+  },
   "bin": {
     "fixts": "./cli.js"
   },
