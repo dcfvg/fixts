@@ -355,8 +355,6 @@ fixts ~/Archive --format "yyyy-mm-dd" --execute
 
 ## Browser Usage
 
-FixTS can be used in browser environments for web applications! See the complete guide: [Browser Usage Documentation](./docs/BROWSER_USAGE.md)
-
 ### Quick Example
 
 ```javascript
@@ -388,8 +386,6 @@ const audioDate = await parseTimestampFromAudio(audioFile);
 **Browser limitations:**
 - ❌ No file system access (can't recursively scan directories)
 - ❌ Can't rename files on disk (can only suggest new names)
-
-For a complete migration guide from copied code to npm package, see: [diapaudio Migration Guide](./docs/DIAPAUDIO_MIGRATION.md)
 
 ---
 
@@ -430,8 +426,6 @@ console.log(`${filtered.withTimestamp.length} files ready to process`);
 - Quality assurance reports (analyze detection quality)
 - Archive migration (preserve timestamps across systems)
 - Pre-flight checks (validate before batch processing)
-
-See the complete guide: [Batch Processing API Documentation](./docs/BATCH_API.md)
 
 Try the demo: `node examples/batch-demo.js`
 
@@ -678,8 +672,6 @@ console.log(`Extracted from: ${result.source}`);
 ```
 
 **Note:** Browser version excludes Node.js-specific sources (mtime, birthtime) but includes filename, EXIF, and audio metadata extraction.
-
-**Full Guide:** See [docs/CROSS_CONTEXT_GUIDE.md](./docs/CROSS_CONTEXT_GUIDE.md) for detailed usage examples, feature matrix, and troubleshooting.
 
 **Verify:** Run `node verify-cross-context.js` to verify all features work in all contexts.
 

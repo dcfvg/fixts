@@ -35,6 +35,12 @@ export default [
     }
   },
   {
-    ignores: ['node_modules/**', 'sample/**', 'test/local-sample/temp/**', 'fixts-webapp/**']
+    ignores: [
+      'node_modules/**',
+      'sample/**',
+      'test/local-sample/temp/**',
+      'fixts-webapp/**',
+      'docs/api/**'  // Auto-generated JSDoc files
+    ]
   }
 ];

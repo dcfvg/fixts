@@ -17,6 +17,7 @@ import { logger } from './logger.js';
  * @param {Date} interpretedDate - The interpreted date
  * @param {Date} mtime - File modification time
  * @returns {number} - Confidence score (0-100)
+ * @private
  */
 function calculateConfidence(interpretedDate, mtime) {
   // Calculate difference in days
@@ -46,6 +47,7 @@ function calculateConfidence(interpretedDate, mtime) {
  * @param {string} filePath - Path to file
  * @param {Object} ambiguity - Ambiguity object from detectAmbiguity
  * @returns {Object} - { resolution: 'dmy'|'mdy', confidence: number, suggestion: string }
+ * @private
  */
 function resolveDayMonthAmbiguity(filePath, ambiguity) {
   try {
@@ -95,6 +97,7 @@ function resolveDayMonthAmbiguity(filePath, ambiguity) {
  * @param {string} filePath - Path to file
  * @param {Object} ambiguity - Ambiguity object from detectAmbiguity
  * @returns {Object} - { resolution: '2000s'|'1900s', confidence: number, suggestion: string }
+ * @private
  */
 function resolveTwoDigitYearAmbiguity(filePath, ambiguity) {
   try {
@@ -147,6 +150,7 @@ function resolveTwoDigitYearAmbiguity(filePath, ambiguity) {
  * Get month name from month number
  * @param {number} month - Month number (1-12)
  * @returns {string} - Month name
+ * @private
  */
 function getMonthName(month) {
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];

@@ -73,6 +73,9 @@ export function parseTimestampBatch(filenames, options = {}) {
 /**
  * Generate cache key based on filename structure
  * Groups similar filenames together (e.g., IMG_*.jpg, Screenshot *.png)
+ * @param {string} filename - Filename to generate cache key for
+ * @returns {string} - Normalized cache key
+ * @private
  */
 function getCacheKey(filename) {
   // Extract pattern signature (prefix + digit pattern + suffix)
@@ -90,6 +93,11 @@ function getCacheKey(filename) {
 
 /**
  * Try to parse using cached pattern knowledge
+ * @param {string} _filename - Filename to parse
+ * @param {Object} _cached - Cached pattern information
+ * @param {Object} _options - Parsing options
+ * @returns {Object|null} - Timestamp object or null for fallback
+ * @private
  */
 function tryWithCachedPattern(_filename, _cached, _options) {
   // For now, just use standard detection
@@ -99,6 +107,10 @@ function tryWithCachedPattern(_filename, _cached, _options) {
 
 /**
  * Update pattern cache with observed timestamp
+ * @param {Map} cache - Pattern cache map
+ * @param {string} key - Cache key
+ * @param {Object} timestamp - Timestamp object to cache
+ * @private
  */
 function updatePatternCache(cache, key, timestamp) {
   if (!cache.has(key)) {

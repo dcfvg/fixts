@@ -51,7 +51,7 @@ export function loadConfig(customPath = null) {
       try {
         const content = readFileSync(configPath, 'utf8');
         const config = JSON.parse(content);
-        
+
         logger.debug(`Loaded config from: ${configPath}`);
         return config;
       } catch (error) {

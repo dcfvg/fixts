@@ -76,6 +76,11 @@ export function extractDigitSequences(filename) {
 
 /**
  * Get separator between two positions
+ * @param {string} filename - Filename to check
+ * @param {number} pos1 - Start position
+ * @param {number} pos2 - End position
+ * @returns {string|null} - Separator character/string or null
+ * @private
  */
 function getSeparatorBetween(filename, pos1, pos2) {
   if (pos2 - pos1 < 1) return null;
@@ -97,6 +102,9 @@ function getSeparatorBetween(filename, pos1, pos2) {
 
 /**
  * Try to parse as compact date: YYYYMMDD (8 digits) or DDMMYYYY (8 digits)
+ * @param {Object} seq - Digit sequence object from extractDigitSequences
+ * @returns {Object|null} - Parsed timestamp or null
+ * @private
  */
 function tryCompactDate(seq) {
   if (seq.digits !== 8) return null;
@@ -188,6 +196,9 @@ function tryCompactDate(seq) {
 
 /**
  * Try to parse as Unix timestamp (10 digits, seconds since epoch)
+ * @param {Object} seq - Digit sequence object from extractDigitSequences
+ * @returns {Object|null} - Parsed timestamp or null
+ * @private
  */
 function tryUnixTimestamp(seq) {
   if (seq.digits !== 10) return null;
@@ -218,6 +229,9 @@ function tryUnixTimestamp(seq) {
 
 /**
  * Try to parse as compact datetime: YYYYMMDDHHMMSS (14 digits)
+ * @param {Object} seq - Digit sequence object from extractDigitSequences
+ * @returns {Object|null} - Parsed timestamp or null
+ * @private
  */
 function tryCompactDateTime(seq) {
   if (seq.digits !== 14) return null;
@@ -257,6 +271,9 @@ function tryCompactDateTime(seq) {
 
 /**
  * Try to parse as compact time: HHMMSS (6 digits) or HHMM (4 digits)
+ * @param {Object} seq - Digit sequence object from extractDigitSequences
+ * @returns {Object|null} - Parsed timestamp or null
+ * @private
  */
 function tryCompactTime(seq) {
   // 6 digits: HHMMSS
@@ -303,6 +320,10 @@ function tryCompactTime(seq) {
 
 /**
  * Try to parse as YYYYMM (6 digits) or YYMMDD (6 digits)
+ * @param {Object} seq - Digit sequence object from extractDigitSequences
+ * @param {string} _filename - Filename context (unused but kept for API consistency)
+ * @returns {Object|null} - Parsed timestamp or null
+ * @private
  */
 function trySixDigits(seq, _filename) {
   if (seq.digits !== 6) return null;
@@ -371,6 +392,10 @@ function trySixDigits(seq, _filename) {
 
 /**
  * Try to parse as 4 digits: YYYY, HHMM, or YYMM
+ * @param {Object} seq - Digit sequence object from extractDigitSequences
+ * @param {string} filename - Filename for context
+ * @returns {Object|null} - Parsed timestamp or null
+ * @private
  */
 function tryFourDigits(seq, filename) {
   if (seq.digits !== 4) return null;
@@ -469,6 +494,9 @@ function tryFourDigits(seq, filename) {
 /**
  * Detect French time format: HHhMMmSSsmmm or HHhMMmSSs
  * Examples: 14h05m37s448, 19h22m44s055
+ * @param {string} filename - Filename to search
+ * @returns {Array<Object>} - Array of detected French time matches
+ * @private
  */
 function detectFrenchTime(filename) {
   // Match: 2digits + h + 2digits + m + 2digits + s + optional 3digits
@@ -507,6 +535,11 @@ function detectFrenchTime(filename) {
  * - DD-MM-YYYY (2-2-4)
  * - YY-MM-DD (2-2-2)
  * - HH:MM:SS (2-2-2 with colon)
+ * @param {Array<Object>} sequences - Digit sequences from extractDigitSequences
+ * @param {string} filename - Filename for context
+ * @param {string} dateFormat - Date format preference ('dmy' or 'mdy')
+ * @returns {Object|null} - Parsed timestamp components or null
+ * @private
  */
 function analyzeSeparatedComponents(sequences, filename, dateFormat = 'dmy') {
   const results = [];
@@ -756,6 +789,10 @@ function analyzeSeparatedComponents(sequences, filename, dateFormat = 'dmy') {
 
 /**
  * Combine date and time components that are adjacent
+ * @param {Array<Object>} components - Parsed timestamp components
+ * @param {string} filename - Filename for context
+ * @returns {Array<Object>} - Combined date-time components
+ * @private
  */
 function combineDateTimeComponents(components, filename) {
   const combined = [];
