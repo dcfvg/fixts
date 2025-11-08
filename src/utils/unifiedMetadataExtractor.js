@@ -18,6 +18,7 @@ import { parseTimestampFromEXIF, parseTimestampFromAudio } from './fileMetadataP
 import { basename, extname } from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { processInChunks } from './batchProgressHelper.js';
 
 /**
  * Timestamp source types
@@ -294,23 +295,61 @@ function isAudioFile(ext) {
  *
  * @param {string[]} filepaths - Array of file paths
  * @param {Object} options - Extraction options (same as extractTimestamp)
- * @returns {Promise<Array>} - Array of extraction results
+ * @param {number|'auto'} options.chunkSize - Process N files at a time, or 'auto' for optimal size (default: 'auto')
+ * @param {Function} options.onProgress - Progress callback: ({completed, total, percentage, elapsedMs, estimatedRemainingMs, filesPerSecond}) => void
+ * @param {boolean} options.yieldBetweenChunks - Yield to event loop between chunks (default: false in Node.js)
+ * @param {import('./batchProgressHelper.js').PauseToken} options.pauseToken - Token to pause/resume processing
+ * @param {AbortSignal} options.abortSignal - Signal to abort processing
+ * @param {Function} options.priorityFn - Function to determine processing priority: (filepath) => number (higher = first)
+ * @param {'fail-fast'|'collect'|'ignore'} options.errorMode - How to handle errors (default: 'collect')
+ * @returns {Promise<Array>} - Array of {filepath, result} objects
  *
  * @example
- * const results = await extractTimestampBatch(['photo1.jpg', 'photo2.jpg']);
+ * const results = await extractTimestampBatch(['photo1.jpg', 'photo2.jpg'], {
+ *   chunkSize: 100,
+ *   onProgress: (info) => console.log(`${info.completed}/${info.total}`)
+ * });
  * results.forEach(r => {
  *   console.log(`${r.filepath}: ${r.result?.source} - ${r.result?.timestamp}`);
  * });
  */
 export async function extractTimestampBatch(filepaths, options = {}) {
-  const results = await Promise.all(
-    filepaths.map(async (filepath) => ({
+  const {
+    chunkSize = 'auto',
+    onProgress,
+    onItemProcessed,
+    yieldBetweenChunks = false, // Default: false in Node.js for better throughput
+    pauseToken,
+    abortSignal,
+    priorityFn,
+    errorMode = 'collect', // Default to collect for batch operations
+    ...extractOptions
+  } = options;
+
+  // Use progressive processing with chunking and progress tracking
+  const { results } = await processInChunks(
+    filepaths,
+    async (filepath) => ({
       filepath,
-      result: await extractTimestamp(filepath, options)
-    }))
+      result: await extractTimestamp(filepath, extractOptions)
+    }),
+    {
+      chunkSize,
+      onProgress,
+      onItemProcessed,
+      yieldBetweenChunks,
+      pauseToken,
+      abortSignal,
+      priorityFn,
+      errorMode
+    }
   );
 
   return results;
+}
+
+/**
+ * Compare timestamps from different sources and detect discrepancies
 }
 
 /**

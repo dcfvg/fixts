@@ -52,6 +52,16 @@ export interface ParseOptions {
   allowTimeOnly?: boolean;
   customOnly?: boolean;
   timeShiftMs?: number;
+  // Progressive batch processing options (Phase 1)
+  chunkSize?: number | 'auto';
+  onProgress?: (info: BatchProgressInfo) => void;
+  onItemProcessed?: OnItemProcessedCallback<string, any>;
+  yieldBetweenChunks?: boolean;
+  // Advanced batch control options (Phase 2)
+  pauseToken?: PauseToken;
+  abortSignal?: AbortSignal;
+  priorityFn?: (filename: string) => number;
+  errorMode?: ErrorMode;
 }
 
 // Core formatting functions
@@ -199,18 +209,22 @@ export interface BatchStats {
 export function parseTimestampBatch(
   filenames: string[],
   options?: ParseOptions & { includeConfidence?: boolean }
-): BatchResult[];
+): Promise<BatchResult[]>;
 
 export function parseAndGroupByConfidence(
   filenames: string[],
   options?: ParseOptions
-): ConfidenceGroups;
+): Promise<ConfidenceGroups>;
 
-export function getBatchStats(results: BatchResult[]): BatchStats;
+export function getBatchStats(
+  filenames: string[],
+  options?: ParseOptions
+): Promise<BatchStats>;
 
 export function filterByTimestamp(
-  filenames: string[]
-): { withTimestamp: string[]; withoutTimestamp: string[] };
+  filenames: string[],
+  options?: ParseOptions
+): Promise<{ withTimestamp: string[]; withoutTimestamp: string[] }>;
 
 // Context-aware ambiguity resolution
 export interface ContextAnalysis {
@@ -299,12 +313,66 @@ export interface TimestampSource {
   confidence: number;
 }
 
+export interface BatchProgressInfo {
+  completed: number;
+  total: number;
+  percentage: number;
+  currentFile?: File | string;
+  currentResult?: ExtractResult | null;
+  elapsedMs: number;
+  estimatedRemainingMs: number | null;
+  filesPerSecond: number;
+}
+
+/**
+ * Callback invoked for each file after it has been processed
+ */
+export type OnItemProcessedCallback<T = File | string, R = any> = (
+  item: T,
+  result: R | null,
+  index: number
+) => void;
+
+/**
+ * PauseToken for controlling batch processing
+ */
+export class PauseToken {
+  constructor();
+  pause(): void;
+  resume(): void;
+  isPaused(): boolean;
+  waitIfPaused(): Promise<void>;
+}
+
+/**
+ * Custom error class for aborted operations
+ */
+export class AbortError extends Error {
+  constructor(message?: string);
+  name: 'AbortError';
+}
+
+/**
+ * Error mode for batch processing
+ */
+export type ErrorMode = 'fail-fast' | 'collect' | 'ignore';
+
 export interface ExtractOptions {
   sources?: string[];
   priority?: string[];
   includeAll?: boolean;
   includeConfidence?: boolean;
   parsingOptions?: ParseOptions;
+  // Progressive batch processing options (Phase 1)
+  chunkSize?: number | 'auto';
+  onProgress?: (info: BatchProgressInfo) => void;
+  onItemProcessed?: OnItemProcessedCallback<File | string, BatchExtractResult>;
+  yieldBetweenChunks?: boolean;
+  // Advanced batch control options (Phase 2)
+  pauseToken?: PauseToken;
+  abortSignal?: AbortSignal;
+  priorityFn?: (filepath: File | string) => number;
+  errorMode?: ErrorMode;
 }
 
 export interface ExtractResult {

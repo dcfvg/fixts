@@ -19,6 +19,7 @@ import { parseTimestampFromEXIF, parseTimestampFromAudio } from './fileMetadataP
 import { getBasename, getExtension } from './path-utils.js';
 import { CONFIDENCE } from '../config/constants.js';
 import { logger } from './logger.js';
+import { processInChunks } from './batchProgressHelper.js';
 
 /**
  * Timestamp source types (browser-safe subset)
@@ -220,14 +221,45 @@ function isAudioFile(ext) {
  *
  * @param {Array<string|File>} filepaths - Array of file paths or File objects
  * @param {Object} options - Extraction options (same as extractTimestamp)
+ * @param {number|'auto'} options.chunkSize - Process N files at a time, or 'auto' for optimal size (default: 'auto')
+ * @param {Function} options.onProgress - Progress callback: ({completed, total, percentage, elapsedMs, estimatedRemainingMs, filesPerSecond}) => void
+ * @param {boolean} options.yieldBetweenChunks - Yield to event loop between chunks for UI responsiveness (default: true)
+ * @param {import('./batchProgressHelper.js').PauseToken} options.pauseToken - Token to pause/resume processing
+ * @param {AbortSignal} options.abortSignal - Signal to abort processing
+ * @param {Function} options.priorityFn - Function to determine processing priority: (filepath) => number (higher = first)
+ * @param {'fail-fast'|'collect'|'ignore'} options.errorMode - How to handle errors (default: 'collect')
  * @returns {Promise<Array>} - Array of extraction results
  */
 export async function extractTimestampBatch(filepaths, options = {}) {
-  const results = await Promise.all(
-    filepaths.map(async (filepath) => ({
+  const {
+    chunkSize = 'auto',
+    onProgress,
+    onItemProcessed,
+    yieldBetweenChunks = true,
+    pauseToken,
+    abortSignal,
+    priorityFn,
+    errorMode = 'collect', // Default to collect for batch operations
+    ...extractOptions
+  } = options;
+
+  // Use progressive processing with chunking and progress tracking
+  const { results } = await processInChunks(
+    filepaths,
+    async (filepath) => ({
       filepath: typeof File !== 'undefined' && filepath instanceof File ? filepath.name : filepath,
-      result: await extractTimestamp(filepath, options)
-    }))
+      result: await extractTimestamp(filepath, extractOptions)
+    }),
+    {
+      chunkSize,
+      onProgress,
+      onItemProcessed,
+      yieldBetweenChunks,
+      pauseToken,
+      abortSignal,
+      priorityFn,
+      errorMode
+    }
   );
 
   return results;

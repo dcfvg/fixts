@@ -759,6 +759,14 @@ async function main() {
   }
   logger.info('');
 
+  // Progress tracking for large batches
+  let lastProgressUpdate = Date.now();
+  const categories = {
+    detected: 0,
+    alreadyFormatted: 0,
+    noTimestamp: 0,
+  };
+
   try {
     const result = await renameFiles(targetPath, {
       format: options.format,
@@ -773,6 +781,42 @@ async function main() {
       excludeExt: options.excludeExt,
       depth: options.depth,
       noRevert: options.noRevert,
+      // Phase 1: Progress reporting
+      onProgress: (info) => {
+        const now = Date.now();
+        // Update every 100ms to avoid spam
+        if (now - lastProgressUpdate > 100) {
+          const percentage = Math.round(info.percentage * 100);
+          const speed = Math.round(info.filesPerSecond);
+          process.stdout.write(
+            `\r   📊 Processing: ${info.completed}/${info.total} ` +
+            `(${percentage}%) • ${speed} files/s`
+          );
+          lastProgressUpdate = now;
+        }
+
+        // Clear line when done
+        if (info.completed === info.total) {
+          process.stdout.write('\r' + ' '.repeat(80) + '\r');
+        }
+      },
+      // Phase 2: Real-time categorization
+      onItemProcessed: (filename, result, _index) => {
+        if (result && result.timestamp) {
+          categories.detected++;
+        } else {
+          categories.noTimestamp++;
+        }
+
+        // Verbose mode: show per-file output
+        if (options.verbose) {
+          const status = (result && result.timestamp) ? '✓' : '✗';
+          const detail = (result && result.timestamp)
+            ? ` → ${result.newName || 'processing...'}`
+            : ' (no timestamp)';
+          logger.info(`   ${status} ${filename}${detail}`);
+        }
+      },
     });
 
     const { results, alreadyFormatted, noTimestamp, withoutTimestamp, skippedAmbiguous, smartStats } = result;

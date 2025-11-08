@@ -13,6 +13,7 @@
 import { getBestTimestamp } from './heuristicDetector.js';
 import { timestampToDate } from './heuristicDetector.js';
 import { CONFIDENCE } from '../config/constants.js';
+import { processInChunks } from './batchProgressHelper.js';
 
 /**
  * Parse timestamps from multiple filenames efficiently
@@ -22,19 +23,39 @@ import { CONFIDENCE } from '../config/constants.js';
  * @param {string} options.dateFormat - Date format preference: 'dmy' or 'mdy'
  * @param {boolean} options.allowTimeOnly - Allow time-only formats
  * @param {boolean} options.includeConfidence - Include confidence scores (default: true)
- * @returns {Array<Object>} - Array of results with {filename, timestamp, date, confidence}
+ * @param {number|'auto'} options.chunkSize - Process N files at a time, or 'auto' for optimal size (default: 'auto')
+ * @param {Function} options.onProgress - Progress callback: ({completed, total, percentage, elapsedMs, estimatedRemainingMs, filesPerSecond}) => void
+ * @param {Function} options.onItemProcessed - Per-item callback: (filename, result, index) => void
+ * @param {boolean} options.yieldBetweenChunks - Yield to event loop between chunks (default: true in browser, false in Node.js)
+ * @param {import('./batchProgressHelper.js').PauseToken} options.pauseToken - Token to pause/resume processing
+ * @param {AbortSignal} options.abortSignal - Signal to abort processing
+ * @param {Function} options.priorityFn - Function to determine processing priority: (filename) => number (higher = first)
+ * @param {'fail-fast'|'collect'|'ignore'} options.errorMode - How to handle errors (default: 'collect')
+ * @returns {Promise<Array<Object>>} - Array of results with {filename, timestamp, date, confidence}
  */
-export function parseTimestampBatch(filenames, options = {}) {
+export async function parseTimestampBatch(filenames, options = {}) {
   const {
     dateFormat = 'dmy',
     allowTimeOnly = false,
-    includeConfidence = true
+    includeConfidence = true,
+    chunkSize = 'auto',
+    onProgress,
+    onItemProcessed,
+    yieldBetweenChunks = typeof window !== 'undefined', // true in browser, false in Node.js
+    pauseToken,
+    abortSignal,
+    priorityFn,
+    errorMode = 'collect' // Default to collect for batch operations
   } = options;
 
-  const results = [];
   const patternCache = new Map(); // Cache pattern types seen
 
-  for (const filename of filenames) {
+  /**
+   * Process a single filename
+   * @param {string} filename - Filename to process
+   * @returns {Object} - Result object
+   */
+  const processFilename = (filename) => {
     // Try to use cached pattern knowledge for similar filenames
     const cacheKey = getCacheKey(filename);
     const cachedPattern = patternCache.get(cacheKey);
@@ -59,14 +80,38 @@ export function parseTimestampBatch(filenames, options = {}) {
     // Convert to date
     const date = timestamp ? timestampToDate(timestamp, { allowTimeOnly }) : null;
 
-    results.push({
+    return {
       filename,
       timestamp,
       date,
       ...(includeConfidence && timestamp ? { confidence: timestamp.confidence } : {})
-    });
+    };
+  };
+
+  // Use progressive processing if chunking is enabled
+  if (chunkSize !== filenames.length && (chunkSize === 'auto' || chunkSize < filenames.length)) {
+    const { results } = await processInChunks(
+      filenames,
+      processFilename,
+      {
+        chunkSize,
+        onProgress,
+        onItemProcessed,
+        yieldBetweenChunks,
+        pauseToken,
+        abortSignal,
+        priorityFn,
+        errorMode
+      }
+    );
+    return results;
   }
 
+  // Fallback to synchronous processing for small batches or when chunking disabled
+  const results = [];
+  for (const filename of filenames) {
+    results.push(processFilename(filename));
+  }
   return results;
 }
 
@@ -132,10 +177,10 @@ function updatePatternCache(cache, key, timestamp) {
  *
  * @param {string[]} filenames - Array of filenames
  * @param {Object} options - Parsing options
- * @returns {Object} - {high: [], medium: [], low: [], none: []}
+ * @returns {Promise<Object>} - {high: [], medium: [], low: [], none: []}
  */
-export function parseAndGroupByConfidence(filenames, options = {}) {
-  const results = parseTimestampBatch(filenames, options);
+export async function parseAndGroupByConfidence(filenames, options = {}) {
+  const results = await parseTimestampBatch(filenames, options);
 
   const grouped = {
     high: [],      // confidence >= CONFIDENCE.THRESHOLD_HIGH
@@ -167,10 +212,10 @@ export function parseAndGroupByConfidence(filenames, options = {}) {
  *
  * @param {string[]} filenames - Array of filenames
  * @param {Object} options - Parsing options
- * @returns {Object} - Statistics about the batch
+ * @returns {Promise<Object>} - Statistics about the batch
  */
-export function getBatchStats(filenames, options = {}) {
-  const results = parseTimestampBatch(filenames, options);
+export async function getBatchStats(filenames, options = {}) {
+  const results = await parseTimestampBatch(filenames, options);
 
   const stats = {
     total: filenames.length,
@@ -222,10 +267,10 @@ export function getBatchStats(filenames, options = {}) {
  *
  * @param {string[]} filenames - Array of filenames
  * @param {Object} options - Parsing options
- * @returns {Object} - {withTimestamp: [], withoutTimestamp: []}
+ * @returns {Promise<Object>} - {withTimestamp: [], withoutTimestamp: []}
  */
-export function filterByTimestamp(filenames, options = {}) {
-  const results = parseTimestampBatch(filenames, options);
+export async function filterByTimestamp(filenames, options = {}) {
+  const results = await parseTimestampBatch(filenames, options);
 
   const filtered = {
     withTimestamp: [],

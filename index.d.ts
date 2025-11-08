@@ -63,6 +63,16 @@ export interface NodeExtractOptions {
   includeAll?: boolean;
   includeConfidence?: boolean;
   parsingOptions?: import('./browser.d.ts').ParseOptions;
+  // Progressive batch processing options (Phase 1)
+  chunkSize?: number | 'auto';
+  onProgress?: (info: import('./browser.d.ts').BatchProgressInfo) => void;
+  onItemProcessed?: import('./browser.d.ts').OnItemProcessedCallback<string, NodeBatchExtractResult>;
+  yieldBetweenChunks?: boolean;
+  // Advanced batch control options (Phase 2)
+  pauseToken?: import('./browser.d.ts').PauseToken;
+  abortSignal?: AbortSignal;
+  priorityFn?: (filepath: string) => number;
+  errorMode?: import('./browser.d.ts').ErrorMode;
 }
 
 export interface NodeExtractResult {

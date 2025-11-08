@@ -395,6 +395,8 @@ Process thousands of files efficiently with the Batch API! 🚀
 
 **Performance:** 250,000+ files/second on typical hardware.
 
+### Basic Usage
+
 ```javascript
 import {
   parseTimestampBatch,
@@ -403,31 +405,365 @@ import {
   filterByTimestamp
 } from 'fixts';
 
-// Parse 1000 files at once
-const results = parseTimestampBatch(filenames);
+// Parse 1000 files at once (all functions now async)
+const results = await parseTimestampBatch(filenames);
 
 // Group by confidence (high/medium/low)
-const grouped = parseAndGroupByConfidence(filenames);
+const grouped = await parseAndGroupByConfidence(filenames);
 console.log(`${grouped.high.length} high-confidence files`);
 console.log(`${grouped.medium.length} may need review`);
 
 // Get statistics
-const stats = getBatchStats(filenames);
+const stats = await getBatchStats(filenames);
 console.log(`Detected: ${stats.detected}/${stats.total}`);
 console.log(`Avg confidence: ${stats.avgConfidence.toFixed(2)}`);
 
 // Filter files
-const filtered = filterByTimestamp(filenames);
+const filtered = await filterByTimestamp(filenames);
 console.log(`${filtered.withTimestamp.length} files ready to process`);
 ```
+
+### Progressive Processing (NEW in v1.2.0) 🚀
+
+For large file sets (3000+ files), use progressive processing to keep the UI responsive:
+
+```javascript
+import { extractTimestampBatch } from 'fixts/browser';
+
+// Process with real-time progress updates
+const results = await extractTimestampBatch(fileInputs, {
+  // Optional: Auto-calculated if not specified
+  // Browser: 50-200, Node.js: 100-1000
+  chunkSize: 'auto',
+  
+  // Optional: Get real-time progress
+  onProgress: (info) => {
+    console.log(`Progress: ${(info.percentage * 100).toFixed(1)}%`);
+    console.log(`Completed: ${info.completed}/${info.total}`);
+    console.log(`Processing: ${info.currentFile}`);
+    console.log(`Rate: ${info.filesPerSecond.toFixed(0)} files/sec`);
+    console.log(`ETA: ${Math.round(info.estimatedRemainingMs / 1000)}s`);
+    
+    // Update UI
+    progressBar.style.width = `${info.percentage * 100}%`;
+    statusText.textContent = `${info.completed}/${info.total}`;
+  },
+  
+  // Optional: Yield to event loop between chunks (default: true in browser)
+  yieldBetweenChunks: true
+});
+```
+
+**Browser example with progress bar:**
+
+```javascript
+// In your web app
+const fileInput = document.querySelector('input[type="file"]');
+const progressBar = document.querySelector('.progress-bar');
+const statusText = document.querySelector('.status');
+
+async function processFiles() {
+  const files = Array.from(fileInput.files);
+  
+  const results = await extractTimestampBatch(files, {
+    chunkSize: 'auto',  // Optimal for browser (50-200)
+    onProgress: ({ percentage, completed, total, filesPerSecond, estimatedRemainingMs }) => {
+      // Update UI in real-time
+      progressBar.style.width = `${percentage * 100}%`;
+      statusText.textContent = `${completed}/${total} files (${Math.round(filesPerSecond)} files/s, ETA: ${Math.round(estimatedRemainingMs / 1000)}s)`;
+    }
+  });
+  
+  console.log(`Processed ${results.length} files`);
+}
+```
+
+**Chunk size options:**
+
+```javascript
+// Auto-calculated (recommended)
+await parseTimestampBatch(files, { chunkSize: 'auto' });
+
+// Specific chunk size
+await parseTimestampBatch(files, { chunkSize: 100 });
+
+// No chunking (process all at once)
+await parseTimestampBatch(files, { chunkSize: Infinity });
+```
+
+**Performance characteristics:**
+
+| File Count | Chunk Size (Browser) | Chunk Size (Node.js) | UI Impact |
+|------------|---------------------|---------------------|-----------|
+| < 100 | 50 | 100 | Minimal |
+| 100-500 | 100 | 500 | Smooth |
+| 500-2000 | 150 | 750 | Responsive |
+| 2000+ | 200 | 1000 | Fluid updates |
+
+**Benefits:**
+- ✅ UI remains responsive during large batch operations
+- ✅ Real-time progress feedback with accurate ETA
+- ✅ Processing rate monitoring (files/second)
+- ✅ Maintains 250,000+ files/second throughput
+- ✅ Automatic chunk size optimization
 
 **Use cases:**
 - Bulk photo organization (process entire folders at once)
 - Quality assurance reports (analyze detection quality)
 - Archive migration (preserve timestamps across systems)
 - Pre-flight checks (validate before batch processing)
+- **Web applications** (keep browser responsive while processing)
 
-Try the demo: `node examples/batch-demo.js`
+Try the demo: `node examples/batch-demo.js` or open `examples/browser-exif-extraction.html`
+
+### Advanced Batch Control (NEW in v1.2.0) 🎮
+
+Take full control of batch processing with pause/resume, abort, priority queues, and error handling.
+
+#### Pause/Resume Processing ⏸️
+
+```javascript
+import { parseTimestampBatch, PauseToken } from 'fixts';
+
+const pauseToken = new PauseToken();
+
+// Start processing
+const processingPromise = parseTimestampBatch(files, {
+  pauseToken,
+  onProgress: (info) => {
+    console.log(`Progress: ${info.percentage * 100}%`);
+    
+    // User can pause/resume via UI
+    pauseButton.onclick = () => pauseToken.pause();
+    resumeButton.onclick = () => pauseToken.resume();
+  }
+});
+
+const results = await processingPromise;
+```
+
+**Use cases:**
+- User-controlled batch operations
+- Resource management (pause during high CPU usage)
+- Debugging and inspection
+
+#### Abort Processing 🛑
+
+```javascript
+import { extractTimestampBatch, AbortError } from 'fixts/browser';
+
+const controller = new AbortController();
+
+// Start processing
+const processingPromise = extractTimestampBatch(files, {
+  abortSignal: controller.signal,
+  onProgress: (info) => {
+    // User clicks cancel button
+    cancelButton.onclick = () => controller.abort();
+  }
+});
+
+try {
+  const results = await processingPromise;
+} catch (error) {
+  if (error instanceof AbortError) {
+    console.log('User cancelled the operation');
+  }
+}
+```
+
+**Use cases:**
+- Cancel buttons in UI
+- Timeout mechanisms
+- User-initiated cancellation
+
+#### Priority Queue Processing 🎯
+
+```javascript
+import { parseTimestampBatch } from 'fixts';
+
+// Process smaller files first (faster feedback)
+const results = await parseTimestampBatch(files, {
+  priorityFn: (filename) => -filename.length,
+  onProgress: (info) => {
+    console.log(`Processing: ${info.currentFile}`);
+  }
+});
+
+// Process files from specific directory first
+const results2 = await parseTimestampBatch(files, {
+  priorityFn: (filename) => {
+    return filename.includes('/important/') ? 1000 : 0;
+  }
+});
+
+// Process newest files first (based on timestamp in filename)
+const results3 = await parseTimestampBatch(files, {
+  priorityFn: (filename) => {
+    const match = filename.match(/(\d{8})/);
+    return match ? parseInt(match[1]) : 0; // Higher date = higher priority
+  }
+});
+```
+
+**Use cases:**
+- Process important files first
+- Show quick results (process small files first)
+- Optimize for user workflow
+
+#### Error Handling Modes 🛡️
+
+```javascript
+import { extractTimestampBatch } from 'fixts/browser';
+
+// Fail-fast: Stop on first error (default for critical operations)
+try {
+  const results = await extractTimestampBatch(files, {
+    errorMode: 'fail-fast'
+  });
+} catch (error) {
+  console.error('Processing failed:', error);
+}
+
+// Collect: Continue processing, collect all errors (best for batch operations)
+const { results, errors } = await extractTimestampBatch(files, {
+  errorMode: 'collect'
+});
+
+console.log(`Processed: ${results.filter(r => r).length}`);
+console.log(`Failed: ${errors.length}`);
+errors.forEach(({ item, error }) => {
+  console.error(`Failed to process ${item}:`, error.message);
+});
+
+// Ignore: Skip errors silently (use with caution)
+const results2 = await extractTimestampBatch(files, {
+  errorMode: 'ignore'
+});
+```
+
+**Use cases:**
+- Batch operations: Use `'collect'` to process as many as possible
+- Critical operations: Use `'fail-fast'` to ensure data integrity
+- Logging operations: Use `'ignore'` for non-critical tasks
+
+#### Per-Item Result Callbacks 🎨
+
+Get results as soon as each file is processed, enabling real-time UI updates and progressive rendering.
+
+```javascript
+import { extractTimestampBatch } from 'fixts/browser';
+
+const categories = { exif: [], filename: [], unknown: [] };
+
+await extractTimestampBatch(photos, {
+  chunkSize: 'auto',
+  
+  // Global progress (for progress bar)
+  onProgress: (info) => {
+    updateProgressBar(info.percentage);
+    showETA(info.estimatedRemainingMs);
+  },
+  
+  // Per-item results (for real-time UI updates)
+  onItemProcessed: (file, result, index) => {
+    // Update UI immediately when file is processed
+    if (result?.result?.source === 'exif') {
+      categories.exif.push(file);
+      renderPhotoInGroup('exif', file, result.result.timestamp);
+    } else if (result?.result?.source === 'filename') {
+      categories.filename.push(file);
+      renderPhotoInGroup('filename', file, result.result.timestamp);
+    } else {
+      categories.unknown.push(file);
+      renderPhotoInGroup('unknown', file);
+    }
+    
+    // Update category counts in real-time
+    updateCategoryCounts(categories);
+  }
+});
+
+console.log('Final categories:', categories);
+```
+
+**Real-world example: Quality analysis dashboard**
+
+```javascript
+const stats = { high: 0, medium: 0, low: 0 };
+
+await extractTimestampBatch(files, {
+  onItemProcessed: (file, result) => {
+    // Update statistics in real-time
+    const confidence = result?.result?.confidence || 0;
+    
+    if (confidence > 0.85) stats.high++;
+    else if (confidence > 0.60) stats.medium++;
+    else stats.low++;
+    
+    // Live chart updates as files are processed
+    updateQualityChart(stats);
+  }
+});
+```
+
+**Early abort on errors:**
+
+```javascript
+let errorCount = 0;
+const controller = new AbortController();
+
+await extractTimestampBatch(files, {
+  abortSignal: controller.signal,
+  onItemProcessed: (file, result) => {
+    if (!result || !result.result) {
+      errorCount++;
+      if (errorCount > 100) {
+        // More than 100 failures - abort early
+        controller.abort();
+        showAlert('Too many failures - please check file format');
+      }
+    }
+  }
+});
+```
+
+**Use cases:**
+- Progressive UI updates (show results as they come)
+- Real-time categorization (move files to groups)
+- Early validation (abort if quality is poor)
+- Live statistics (build charts progressively)
+- Incremental rendering (reduce memory pressure)
+
+#### Combining Features 🚀
+
+```javascript
+import { parseTimestampBatch, PauseToken } from 'fixts';
+
+const pauseToken = new PauseToken();
+const controller = new AbortController();
+
+const results = await parseTimestampBatch(largeFileSet, {
+  // Progressive processing
+  chunkSize: 'auto',
+  onProgress: (info) => {
+    updateUI(info);
+    
+    // Auto-pause if CPU usage high
+    if (getCPUUsage() > 80) pauseToken.pause();
+    if (getCPUUsage() < 50) pauseToken.resume();
+  },
+  yieldBetweenChunks: true,
+  
+  // Advanced control
+  pauseToken,
+  abortSignal: controller.signal,
+  priorityFn: (f) => f.includes('/VIP/') ? 1000 : 0,
+  errorMode: 'collect'
+});
+
+console.log(`Success: ${results.filter(r => r).length}`);
+```
 
 ---
 

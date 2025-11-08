@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FixTS Browser EXIF Extraction Demo</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 0 20px;
+      line-height: 1.6;
+    }
+    h1 {
+      color: #333;
+    }
+    .file-input {
+      margin: 20px 0;
+      padding: 20px;
+      border: 2px dashed #ccc;
+      border-radius: 8px;
+      background: #f9f9f9;
+    }
+    input[type="file"] {
+      margin: 10px 0;
+    }
+    .results {
+      margin-top: 20px;
+      padding: 20px;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+    }
+    .result-item {
+      margin: 15px 0;
+      padding: 15px;
+      background: #f5f5f5;
+      border-left: 4px solid #4CAF50;
+      border-radius: 4px;
+    }
+    .result-item h3 {
+      margin-top: 0;
+      color: #333;
+    }
+    .timestamp {
+      font-family: 'Courier New', monospace;
+      background: #fff;
+      padding: 5px 10px;
+      border-radius: 3px;
+      display: inline-block;
+      margin: 5px 0;
+    }
+    .source {
+      display: inline-block;
+      padding: 3px 8px;
+      background: #2196F3;
+      color: white;
+      border-radius: 3px;
+      font-size: 0.85em;
+      margin-left: 10px;
+    }
+    .confidence {
+      display: inline-block;
+      padding: 3px 8px;
+      background: #FF9800;
+      color: white;
+      border-radius: 3px;
+      font-size: 0.85em;
+      margin-left: 5px;
+    }
+    .error {
+      color: #f44336;
+      padding: 10px;
+      background: #ffebee;
+      border-radius: 4px;
+      margin: 10px 0;
+    }
+    .loading {
+      color: #666;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+  <h1>FixTS Browser EXIF Extraction Demo</h1>
+  <p>
+    This demo shows how <code>extractTimestampBatch()</code> now works correctly in the browser
+    with File objects. It uses the <strong>exifr</strong> library which is optimized for browser environments.
+  </p>
+
+  <div class="file-input">
+    <h2>Select Image Files</h2>
+    <p>Choose one or more image files (JPEG, PNG, etc.) to extract timestamps from EXIF data:</p>
+    <input type="file" id="fileInput" multiple accept="image/*">
+  </div>
+
+  <div id="results" class="results" style="display: none;">
+    <h2>Extraction Results</h2>
+    <div id="resultsContent"></div>
+  </div>
+
+  <!-- Import fixts as ES module -->
+  <script type="module">
+    // NOTE: In a real application, you would import from npm package:
+    // import { extractTimestampBatch } from 'fixts/browser';
+    
+    // For this demo, we'll import from the local build
+    // You would need to build the browser bundle first
+    import { extractTimestampBatch } from '../browser.js';
+
+    const fileInput = document.getElementById('fileInput');
+    const results = document.getElementById('results');
+    const resultsContent = document.getElementById('resultsContent');
+
+    fileInput.addEventListener('change', async (event) => {
+      const files = Array.from(event.target.files);
+      
+      if (files.length === 0) {
+        results.style.display = 'none';
+        return;
+      }
+
+      results.style.display = 'block';
+      resultsContent.innerHTML = '<p class="loading">Processing files...</p>';
+
+      try {
+        // Extract timestamps from all selected files
+        const extractionResults = await extractTimestampBatch(files, {
+          includeConfidence: true,
+          sources: ['exif', 'filename'] // Try EXIF first, then filename
+        });
+
+        // Display results
+        let html = '';
+        
+        for (const { filepath, result } of extractionResults) {
+          html += '<div class="result-item">';
+          html += `<h3>${escapeHtml(filepath)}</h3>`;
+          
+          if (result) {
+            const timestamp = result.timestamp;
+            const source = result.source;
+            const confidence = result.confidence;
+            
+            html += `<div>`;
+            html += `<strong>Timestamp:</strong> `;
+            html += `<span class="timestamp">${timestamp.toISOString()}</span>`;
+            html += `<span class="source">${source}</span>`;
+            html += `<span class="confidence">Confidence: ${(confidence * 100).toFixed(0)}%</span>`;
+            html += `</div>`;
+            
+            html += `<div style="margin-top: 10px; color: #666; font-size: 0.9em;">`;
+            html += `<strong>Human-readable:</strong> ${timestamp.toLocaleString()}`;
+            html += `</div>`;
+            
+            if (result.details) {
+              html += `<div style="margin-top: 5px; color: #666; font-size: 0.85em;">`;
+              html += `<strong>Details:</strong> ${JSON.stringify(result.details)}`;
+              html += `</div>`;
+            }
+          } else {
+            html += '<div class="error">No timestamp found</div>';
+          }
+          
+          html += '</div>';
+        }
+        
+        resultsContent.innerHTML = html;
+
+        // Log to console for debugging
+        console.log('Extraction results:', extractionResults);
+        
+      } catch (error) {
+        resultsContent.innerHTML = `
+          <div class="error">
+            <strong>Error:</strong> ${escapeHtml(error.message)}
+            <br><br>
+            <details>
+              <summary>Stack trace</summary>
+              <pre>${escapeHtml(error.stack)}</pre>
+            </details>
+          </div>
+        `;
+        console.error('Extraction error:', error);
+      }
+    });
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>

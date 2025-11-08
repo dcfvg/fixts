@@ -1109,7 +1109,7 @@ export function getBestTimestamp(filename, options = {}) {
     return null;
   }
 
-  // Special case: merge DATE + TIME when separated (e.g., "2025-10-08 00.00.00 - 10.03.23")
+  // Special case 1: merge DATE + TIME when separated (e.g., "2025-10-08 00.00.00 - 10.03.23")
   // Look for pattern: full date with time (precision=second) followed by another time component
   const fullDateTime = timestamps.find(ts => ts.year && ts.month && ts.day && ts.precision === 'second');
   const timeOnly = timestamps.find(ts => !ts.year && ts.hour !== undefined && ts.precision === 'second');
@@ -1130,10 +1130,71 @@ export function getBestTimestamp(filename, options = {}) {
     return merged;
   }
 
-  // Precision order: millisecond > second > day > month > year
-  const precisionOrder = { millisecond: 5, second: 4, day: 3, month: 2, year: 1 };
+  // Special case 2: Extract seconds from 6-digit HHMMSS pattern when HH:MM matches existing timestamp
+  // Example: "2022-05-17-11:02 - NADEGE_110214.jpg" → 110214 provides seconds (14)
+  // Find datetime with minute precision
+  const dateTimeMinute = timestamps.find(ts => ts.year && ts.month && ts.day && ts.precision === 'minute');
+  // Find 6-digit pattern that could be HHMMSS
+  const sixDigitPattern = timestamps.find(ts => {
+    // Must be 6 digits (COMPACT_YY type or similar)
+    if (ts.end - ts.start !== 6) return false;
+    // Must come after the datetime
+    if (!dateTimeMinute || ts.start <= dateTimeMinute.end) return false;
+
+    // Check if first 4 digits match HH:MM from the datetime
+    const patternStr = filename.slice(ts.start, ts.end);
+    const hh = parseInt(patternStr.slice(0, 2), 10);
+    const mm = parseInt(patternStr.slice(2, 4), 10);
+    const ss = parseInt(patternStr.slice(4, 6), 10);
+
+    // Must be valid time components
+    if (!validators.hour(hh) || !validators.minute(mm) || !validators.second(ss)) {
+      return false;
+    }
+
+    // Check if HH:MM matches the datetime's hour:minute
+    return hh === dateTimeMinute.hour && mm === dateTimeMinute.minute;
+  });
+
+  if (dateTimeMinute && sixDigitPattern) {
+    // Extract seconds from the 6-digit pattern
+    const patternStr = filename.slice(sixDigitPattern.start, sixDigitPattern.end);
+    const seconds = parseInt(patternStr.slice(4, 6), 10);
+
+    // Create merged timestamp with seconds
+    const merged = {
+      ...dateTimeMinute,
+      second: seconds,
+      precision: 'second', // Upgrade precision
+      end: dateTimeMinute.end, // Keep original end position
+      type: 'MERGED_WITH_SECONDS',
+    };
+    merged.confidence = calculateConfidence(merged, filename);
+    return merged;
+  }
+
+  // Precision order: millisecond > second > minute > day > month > year
+  const precisionOrder = {
+    millisecond: 6,
+    second: 5,
+    minute: 4,  // Add minute precision
+    day: 3,
+    month: 2,
+    year: 1
+  };
 
   timestamps.sort((a, b) => {
+    // IMPORTANT: Sort by CONFIDENCE first, then precision
+    // This prevents false positives from embedded patterns
+    const confA = calculateConfidence(a, filename);
+    const confB = calculateConfidence(b, filename);
+
+    // If confidence difference is significant (>0.2), use confidence
+    if (Math.abs(confA - confB) > 0.2) {
+      return confB - confA; // Higher confidence wins
+    }
+
+    // Otherwise, use precision
     const precA = precisionOrder[a.precision] || 0;
     const precB = precisionOrder[b.precision] || 0;
 
@@ -1144,8 +1205,8 @@ export function getBestTimestamp(filename, options = {}) {
       if (hasTimeA !== hasTimeB) {
         return hasTimeB - hasTimeA;
       }
-      // If still equal, prefer the later one in the filename
-      return b.start - a.start;
+      // If still equal, prefer the earlier one in the filename (start position)
+      return a.start - b.start;
     }
 
     return precB - precA;
