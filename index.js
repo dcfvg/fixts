@@ -10,12 +10,24 @@ export {
   getDetectionInfo,
 } from './src/utils/timestampParser.js';
 
+// Low-level heuristic detection (with confidence scores)
+export {
+  getBestTimestamp,
+  detectTimestampHeuristic,
+  formatTimestamp,
+  timestampToDate,
+} from './src/utils/heuristicDetector.js';
+
 // File metadata extraction (EXIF, audio tags)
 export {
   parseTimestampFromEXIF,
   parseTimestampFromAudio,
-  parseEXIFDateTime,
 } from './src/utils/fileMetadataParser.js';
+
+// Date utilities
+export {
+  parseEXIFDateTime,
+} from './src/utils/dateUtils.js';
 
 // Batch processing API (high-performance bulk operations)
 export {

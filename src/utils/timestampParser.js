@@ -61,7 +61,7 @@ function parseWithHeuristic(filename, options = {}) {
  * Get detailed detection info (for debugging/analysis)
  *
  * @param {string} filename - Filename to analyze
- * @returns {Object} - Detection details
+ * @returns {Object} - Detection details including confidence scores
  */
 export function getDetectionInfo(filename) {
   const customTimestamp = applyCustomPatterns(filename);
@@ -78,6 +78,7 @@ export function getDetectionInfo(filename) {
       pattern: customTimestamp?.customPattern,
       type: customTimestamp?.type,
       precision: customTimestamp?.precision,
+      confidence: customTimestamp?.confidence, // Include confidence score
     },
     heuristic: {
       detected: !!heuristicTimestamp,
@@ -85,6 +86,8 @@ export function getDetectionInfo(filename) {
       date: heuristicDate,
       type: heuristicTimestamp?.type,
       precision: heuristicTimestamp?.precision,
+      confidence: heuristicTimestamp?.confidence, // Include confidence score
+      alternatives: heuristicTimestamp?.alternatives, // Include alternative matches with their confidence
     },
   };
 }
