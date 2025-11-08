@@ -19,6 +19,7 @@ import { basename, extname } from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { processInChunks } from './batchProgressHelper.js';
+import { globalMetadataCache } from './metadataCache.js';
 
 /**
  * Timestamp source types
@@ -44,6 +45,42 @@ export const DEFAULT_PRIORITY = [
 ];
 
 /**
+ * Select primary source based on priority order
+ *
+ * @param {Array} allSources - All available sources
+ * @param {string[]} priority - Source priority order
+ * @param {boolean} includeAll - Whether to include all sources in result
+ * @returns {Object|null} Selected result
+ * @private
+ */
+function selectByPriority(allSources, priority, includeAll) {
+  if (!allSources || allSources.length === 0) {
+    return null;
+  }
+
+  // Sort by priority order
+  const sorted = [...allSources].sort((a, b) => {
+    const aIdx = priority.indexOf(a.source);
+    const bIdx = priority.indexOf(b.source);
+
+    // Sources not in priority list go last
+    if (aIdx === -1) return 1;
+    if (bIdx === -1) return -1;
+
+    return aIdx - bIdx;
+  });
+
+  if (includeAll) {
+    return {
+      primary: sorted[0],
+      all: sorted
+    };
+  }
+
+  return sorted[0];
+}
+
+/**
  * Extract timestamp from any available source
  *
  * @param {string} filepath - Full path to file
@@ -51,6 +88,9 @@ export const DEFAULT_PRIORITY = [
  * @param {string[]} options.sources - Source priority order (default: DEFAULT_PRIORITY)
  * @param {boolean} options.includeAll - Return all sources, not just first match (default: false)
  * @param {boolean} options.includeConfidence - Include confidence scores (default: true)
+ * @param {boolean} options.useCache - Use metadata cache (default: true)
+ * @param {boolean} options.cacheResults - Store results in cache (default: true)
+ * @param {Function} options.onCacheHit - Callback when cache hit: (filepath, cached) => void
  * @param {Object} options.parsingOptions - Options for filename parsing (dateFormat, allowTimeOnly, etc.)
  * @returns {Object|null} - Extraction result or null if no timestamp found
  *
@@ -74,12 +114,26 @@ export const DEFAULT_PRIORITY = [
  * //     { source: 'mtime', timestamp: Date, confidence: 0.50 }
  * //   ]
  * // }
+ *
+ * @example
+ * // Use cache for better performance
+ * const result = await extractTimestamp('photo.jpg', {
+ *   useCache: true,
+ *   onCacheHit: (fp, cached) => console.log('Cache hit!', fp)
+ * });
+ *
+ * @example
+ * // Force re-extraction (bypass cache)
+ * const fresh = await extractTimestamp('photo.jpg', { useCache: false });
  */
 export async function extractTimestamp(filepath, options = {}) {
   const {
     sources = DEFAULT_PRIORITY,
     includeAll = false,
     includeConfidence = true,
+    useCache = true,
+    cacheResults = true,
+    onCacheHit = null,
     parsingOptions = {}
   } = options;
 
@@ -88,6 +142,33 @@ export async function extractTimestamp(filepath, options = {}) {
     ? fileURLToPath(filepath)
     : filepath;
 
+  // Get file stats (needed for cache key and filesystem times)
+  let stats;
+  try {
+    stats = fs.statSync(normalizedPath);
+  } catch {
+    return null; // File doesn't exist or can't be accessed
+  }
+
+  // Check cache first
+  if (useCache) {
+    const cached = globalMetadataCache.get(normalizedPath, stats);
+    if (cached) {
+      // Notify caller about cache hit
+      if (onCacheHit) {
+        try {
+          onCacheHit(normalizedPath, cached);
+        } catch {
+          // Ignore callback errors
+        }
+      }
+
+      // Re-apply priority to cached results
+      return selectByPriority(cached.allSources, sources, includeAll);
+    }
+  }
+
+  // Cache miss - extract metadata from all requested sources
   const results = [];
   const filename = basename(normalizedPath);
   const ext = extname(normalizedPath).toLowerCase();
@@ -149,14 +230,14 @@ export async function extractTimestamp(filepath, options = {}) {
     return null;
   }
 
-  if (includeAll) {
-    return {
-      primary: results[0],
-      all: results
-    };
+  // Store ALL sources in cache (regardless of includeAll setting)
+  // This allows priority changes without re-reading files
+  if (cacheResults) {
+    globalMetadataCache.set(normalizedPath, stats, results);
   }
 
-  return results[0];
+  // Return based on includeAll setting
+  return selectByPriority(results, sources, includeAll);
 }
 
 /**
@@ -509,4 +590,151 @@ export async function suggestBestSource(filepath) {
       ? `Use ${best.source} (highest confidence), but verify due to discrepancies`
       : `${best.source} is reliable and consistent with other sources`
   };
+}
+
+/**
+ * Re-apply priority to existing batch results without re-reading files
+ *
+ * IMPORTANT: Only works if original extraction used `includeAll: true`
+ *
+ * This is useful when user changes the metadata source priority in the UI.
+ * Instead of re-extracting metadata from all files (expensive I/O), we just
+ * re-sort the cached results based on the new priority.
+ *
+ * @param {Array} batchResults - Results from extractTimestampBatch()
+ * @param {string[]} newPriority - New source priority order
+ * @returns {Array} Updated results with new priority applied
+ *
+ * @throws {TypeError} If batchResults is not an array or newPriority is invalid
+ *
+ * @example
+ * // Original extraction with ALL sources
+ * const results = await extractTimestampBatch(files, {
+ *   sources: ['filename', 'exif', 'audio'],
+ *   includeAll: true  // REQUIRED for reapplyPriority!
+ * });
+ *
+ * // User changes priority in UI - instant update!
+ * const updated = reapplyPriority(results, ['exif', 'filename', 'audio']);
+ * // No file I/O! Just re-sorts existing results (~0ms for 1000 files)
+ *
+ * @example
+ * // Check if results can be re-prioritized first
+ * if (canReapplyPriority(results)) {
+ *   const updated = reapplyPriority(results, newPriority);
+ * } else {
+ *   console.warn('Results missing "all" sources - must re-extract');
+ * }
+ */
+export function reapplyPriority(batchResults, newPriority) {
+  if (!Array.isArray(batchResults)) {
+    throw new TypeError('batchResults must be an array');
+  }
+
+  if (!Array.isArray(newPriority) || newPriority.length === 0) {
+    throw new TypeError('newPriority must be a non-empty array');
+  }
+
+  return batchResults.map(item => {
+    const { filepath, result } = item;
+
+    // No result or no 'all' sources - can't reapply
+    if (!result || !result.all) {
+      return item;
+    }
+
+    // Re-sort sources by new priority
+    const sorted = [...result.all].sort((a, b) => {
+      const aIdx = newPriority.indexOf(a.source);
+      const bIdx = newPriority.indexOf(b.source);
+
+      // Sources not in priority list go last
+      if (aIdx === -1) return 1;
+      if (bIdx === -1) return -1;
+
+      return aIdx - bIdx;
+    });
+
+    return {
+      filepath,
+      result: {
+        primary: sorted[0],
+        all: sorted
+      }
+    };
+  });
+}
+
+/**
+ * Check if batch results can be re-prioritized (have 'all' sources)
+ *
+ * Validates that results have the required structure for reapplyPriority()
+ * to work. Results must have been extracted with `includeAll: true`.
+ *
+ * @param {Array} batchResults - Results to check
+ * @returns {boolean} True if reapplyPriority() will work
+ *
+ * @example
+ * if (canReapplyPriority(results)) {
+ *   // Safe to call reapplyPriority
+ *   const updated = reapplyPriority(results, newPriority);
+ * } else {
+ *   // Need to re-extract with includeAll: true
+ *   console.log('Cannot reapply - missing source data');
+ * }
+ */
+export function canReapplyPriority(batchResults) {
+  if (!Array.isArray(batchResults) || batchResults.length === 0) {
+    return false;
+  }
+
+  // Check if at least one result has the 'all' sources
+  return batchResults.some(item => item.result && item.result.all);
+}
+
+/**
+ * Clear metadata cache
+ *
+ * Useful for testing, memory management, or forcing re-extraction.
+ * Returns statistics about the cache before clearing.
+ *
+ * @param {string} [filepath] - Optional: clear only this file (all versions)
+ * @returns {Object} Cache statistics before clearing
+ *
+ * @example
+ * // Clear entire cache
+ * const stats = clearMetadataCache();
+ * console.log(`Cleared ${stats.size} cached entries`);
+ * console.log(`Cache had ${stats.hitRate * 100}% hit rate`);
+ *
+ * @example
+ * // Clear specific file only
+ * clearMetadataCache('/path/to/photo.jpg');
+ */
+export function clearMetadataCache(filepath = null) {
+  const stats = globalMetadataCache.getStats();
+  globalMetadataCache.clear(filepath);
+  return stats;
+}
+
+/**
+ * Get metadata cache statistics
+ *
+ * Returns current cache performance metrics. Useful for monitoring
+ * and optimization.
+ *
+ * @returns {Object} Cache statistics
+ * @returns {number} return.hits - Number of cache hits
+ * @returns {number} return.misses - Number of cache misses
+ * @returns {number} return.size - Current number of cached entries
+ * @returns {number} return.hitRate - Cache hit rate (0-1)
+ *
+ * @example
+ * const stats = getMetadataCacheStats();
+ * console.log(`Cache size: ${stats.size} entries`);
+ * console.log(`Hit rate: ${(stats.hitRate * 100).toFixed(1)}%`);
+ * console.log(`${stats.hits} hits, ${stats.misses} misses`);
+ */
+export function getMetadataCacheStats() {
+  return globalMetadataCache.getStats();
 }

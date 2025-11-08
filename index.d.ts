@@ -165,6 +165,34 @@ export function suggestBestSource(
   filePath: string
 ): Promise<NodeBestSourceSuggestion>;
 
+// Cache control functions (v1.2.0)
+export function reapplyPriority(
+  batchResults: NodeBatchExtractResult | NodeBatchExtractResult[],
+  newPriority: string[] | string
+): NodeBatchExtractResult | NodeBatchExtractResult[];
+
+export function canReapplyPriority(
+  batchResults: NodeBatchExtractResult | NodeBatchExtractResult[]
+): boolean;
+
+export function clearMetadataCache(
+  filepath?: string
+): {
+  hits: number;
+  misses: number;
+  size: number;
+  hitRate: number;
+  evictions: number;
+};
+
+export function getMetadataCacheStats(): {
+  hits: number;
+  misses: number;
+  size: number;
+  hitRate: number;
+  evictions: number;
+};
+
 export const SOURCE_TYPE: {
   FILENAME: 'filename';
   EXIF: 'exif';

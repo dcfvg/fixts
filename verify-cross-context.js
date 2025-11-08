@@ -186,7 +186,7 @@ try {
   clearPatterns();
 
   // Test unified metadata (v1.0.8)
-  const result = await extractTimestamp('2024-01-15-test.txt');
+  const result = await extractTimestamp('test/integration/fixtures/2024-11-02-photo.jpg');
   if (!result || !result.source || !result.timestamp) {
     throw new Error('Unified metadata extraction failed');
   }

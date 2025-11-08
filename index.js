@@ -67,6 +67,10 @@ export {
   compareTimestampSources,
   getSourceStatistics,
   suggestBestSource,
+  reapplyPriority,
+  canReapplyPriority,
+  clearMetadataCache,
+  getMetadataCacheStats,
   SOURCE_TYPE,
   DEFAULT_PRIORITY,
 } from './src/utils/unifiedMetadataExtractor.js';
