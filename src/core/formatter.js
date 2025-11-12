@@ -148,31 +148,57 @@ function splitExtension(filename) {
 }
 
 /**
+ * Check if two timestamps represent the same date (ignoring time)
+ * @param {Object} ts1 - First timestamp object
+ * @param {Object} ts2 - Second timestamp object
+ * @returns {boolean} - True if they represent the same date
+ */
+function isSameDate(ts1, ts2) {
+  return ts1.year === ts2.year && ts1.month === ts2.month && ts1.day === ts2.day;
+}
+
+/**
  * Remove timestamp patterns from filename while preserving semantic content
  * Uses heuristic detection to identify and remove timestamps
+ * Also removes redundant timestamps that represent the same date
  * @param {string} filename - Filename without extension
+ * @param {Object} primaryTimestamp - The primary timestamp object (optional, for redundancy checking)
  * @returns {string} - Cleaned filename
  */
-function removeTimestampPatterns(filename) {
+function removeTimestampPatterns(filename, primaryTimestamp = null) {
   let cleaned = filename;
 
   // Use heuristic detection to find the timestamp
   const timestampInfo = getBestTimestamp(filename);
-  if (timestampInfo && timestampInfo.start !== undefined && timestampInfo.end !== undefined) {
-    // Remove the detected timestamp substring
-    const before = filename.slice(0, timestampInfo.start);
-    const after = filename.slice(timestampInfo.end);
-    cleaned = (before + after).replace(/^[-_\s]+|[-_\s]+$/g, '').trim();
-
-    // If the entire filename was just the timestamp, return empty
-    if (cleaned.length === 0) {
-      return '';
-    }
-
-    return cleaned;
+  if (!timestampInfo || timestampInfo.start === undefined || timestampInfo.end === undefined) {
+    return cleaned; // No timestamp detected
   }
 
-  // No timestamp detected
+  // Collect all timestamps (primary + alternatives) that match the same date
+  const timestampsToRemove = [
+    { start: timestampInfo.start, end: timestampInfo.end }
+  ];
+
+  // Add redundant alternatives (same date as primary)
+  if (primaryTimestamp && timestampInfo.alternatives && timestampInfo.alternatives.length > 0) {
+    for (const altTimestamp of timestampInfo.alternatives) {
+      if (isSameDate(primaryTimestamp, altTimestamp)) {
+        timestampsToRemove.push({ start: altTimestamp.start, end: altTimestamp.end });
+      }
+    }
+  }
+
+  // Sort by start position (descending) so we remove from end to beginning
+  // This prevents position shifts from affecting later removals
+  timestampsToRemove.sort((a, b) => b.start - a.start);
+
+  // Remove all timestamps
+  for (const { start, end } of timestampsToRemove) {
+    const before = cleaned.slice(0, start);
+    const after = cleaned.slice(end);
+    cleaned = (before + after).replace(/^[-_\s]+|[-_\s]+$/g, '').trim();
+  }
+
   return cleaned;
 }
 
@@ -207,15 +233,18 @@ export function generateNewName(originalName, template = 'yyyy-mm-dd hh.MM.ss', 
     return null;
   }
 
-  // Step 2: Separate extension
+  // Step 2: Get the primary timestamp for redundancy detection
+  const primaryTimestamp = getBestTimestamp(originalName);
+
+  // Step 3: Separate extension
   const { nameWithoutExt, extension } = splitExtension(originalName);
 
-  // Step 3: Remove timestamp patterns
-  const withoutTimestamp = removeTimestampPatterns(nameWithoutExt);
+  // Step 4: Remove timestamp patterns (including redundant ones)
+  const withoutTimestamp = removeTimestampPatterns(nameWithoutExt, primaryTimestamp);
 
-  // Step 4: Apply general cleaning patterns
+  // Step 5: Apply general cleaning patterns
   const cleaned = applyCleaningPatterns(withoutTimestamp);
 
-  // Step 5: Build final name
+  // Step 6: Build final name
   return buildFinalName(result.formatted, cleaned, extension);
 }
