@@ -152,7 +152,7 @@ mkdir subdir
 touch "subdir/2024-01-21-sub-photo.jpg"
 touch "subdir/2024-01-22-sub-video.mp4"
 
-OUTPUT=$(fixts . -d -i jpg 2>&1)
+OUTPUT=$(fixts . -d --depth Infinity -i jpg 2>&1)
 
 # Check files from subdirectory
 if echo "$OUTPUT" | grep -q "2024-01-21-sub-photo.jpg"; then

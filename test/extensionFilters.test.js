@@ -151,6 +151,7 @@ describe('Extension Filters', () => {
       const result = await rename(TEST_DIR, {
         format: 'yyyy-mm-dd',
         dryRun: true,
+        depth: Infinity,
         includeExt: ['jpg'],
       });
 

@@ -1,3 +1,4 @@
+/* Node.js-only module - uses fs.statSync for cache invalidation */
 /**
  * @module metadataCache
  * @browserSafe false

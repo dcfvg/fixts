@@ -13,6 +13,10 @@ import { detectAmbiguity, resolveAmbiguities } from '../utils/ambiguityDetector.
 import { extractDatesFromFiles, formatMetadataDate } from '../utils/metadataExtractor.js';
 import { batchAnalyzeAmbiguousFiles } from '../utils/smartAmbiguityResolver.js';
 import { parseTimestampBatch } from '../utils/batchProcessor.js';
+import {
+  TimestampNotFoundError,
+  FileAccessError
+} from './errors.js';
 
 /**
  * NOTE: This file currently uses Node.js fs and path modules directly.
@@ -20,6 +24,11 @@ import { parseTimestampBatch } from '../utils/batchProcessor.js';
  * for future refactoring to make this code execution-context agnostic.
  * Current status: Working with Node.js, fully functional for CLI usage.
  */
+
+/**
+ * @typedef {import('../../types').RenameOptions} RenameOptions
+ */
+
 
 /**
  * Get path depth (number of directory levels) in a cross-platform way
@@ -61,15 +70,19 @@ function isSystemFile(filename) {
  * @param {string} newPath - New file path
  */
 function renamePreservingTimestamps(oldPath, newPath) {
-  // Get original file stats
-  const stats = statSync(oldPath);
-  const { atime, mtime } = stats;
+  try {
+    // Get original file stats
+    const stats = statSync(oldPath);
+    const { atime, mtime } = stats;
 
-  // Perform the rename
-  renameSync(oldPath, newPath);
+    // Perform the rename
+    renameSync(oldPath, newPath);
 
-  // Restore original timestamps
-  utimesSync(newPath, atime, mtime);
+    // Restore original timestamps
+    utimesSync(newPath, atime, mtime);
+  } catch (error) {
+    throw new FileAccessError('rename', oldPath, error);
+  }
 }
 
 /**
@@ -209,7 +222,14 @@ export function processPath(path, options = {}) {
   const newName = generateNewName(name, format, parsingOptions);
 
   if (!newName || newName === name) {
-    return { success: false, oldPath: path, newPath: path, error: 'No timestamp found or no change needed' };
+    return {
+      success: false,
+      oldPath: path,
+      newPath: path,
+      error: new TimestampNotFoundError(name),
+      oldName: name,
+      newName: name,
+    };
   }
 
   const result = {
@@ -233,7 +253,7 @@ export function processPath(path, options = {}) {
       renamePreservingTimestamps(result.oldPath, result.newPath);
       result.success = true;
     } catch (error) {
-      result.error = error.message;
+      result.error = error; // Keep the original error object
     }
   } else {
     result.success = true; // Dry-run is always successful
@@ -327,7 +347,7 @@ function processItemBase(itemPath, options, targetDir = null, basePath = null) {
       }
       result.success = true;
     } catch (error) {
-      result.error = error.message;
+      result.error = error;
       result.success = false;
     }
   } else {
@@ -420,7 +440,7 @@ function processItemWithCopy(path, timedDir, basePath, options) {
  * @param {number} currentDepth - Current recursion depth
  * @returns {Promise<Object>} - { toRename: Array<{path, newName}>, alreadyFormatted: Array<string>, withoutTimestamp: Array<string> }
  */
-async function findItemsWithTimestamps(dirPath, format = 'yyyy-mm-dd hh.MM.ss', parsingOptions = {}, includeExt = [], excludeExt = [], excludeDir = [], maxDepth = Infinity, currentDepth = 1) {
+async function findItemsWithTimestamps(dirPath, format = 'yyyy-mm-dd hh.MM.ss', parsingOptions = {}, includeExt = [], excludeExt = [], excludeDir = [], maxDepth = 1, currentDepth = 1) {
   const toRename = [];
   const alreadyFormatted = [];
   const withoutTimestamp = [];
@@ -568,7 +588,7 @@ async function findItemsWithTimestamps(dirPath, format = 'yyyy-mm-dd hh.MM.ss', 
  * @param {number} maxDepth - Maximum recursion depth
  * @returns {Promise<Object>} - { toRename: Array<{path, newName, oldName}>, alreadyFormatted: Array<string>, withoutTimestamp: Array<string> }
  */
-async function discoverItems(targetPath, format = 'yyyy-mm-dd hh.MM.ss', parsingOptions = {}, includeExt = [], excludeExt = [], excludeDir = [], maxDepth = Infinity) {
+async function discoverItems(targetPath, format = 'yyyy-mm-dd hh.MM.ss', parsingOptions = {}, includeExt = [], excludeExt = [], excludeDir = [], maxDepth = 1) {
   const stats = statSync(targetPath);
 
   if (stats.isDirectory()) {
@@ -756,7 +776,7 @@ function processSingleFile(filePath, resolutions, options) {
 
   if (copy) {
     const timedDir = join(dirname(filePath), '_c');
-    return processItemWithCopy(filePath, timedDir, {
+    return processItemWithCopy(filePath, timedDir, dirname(filePath), {
       format,
       dryRun,
       execute,
@@ -781,7 +801,7 @@ function processSingleFile(filePath, resolutions, options) {
  */
 function generateAmbiguityMessage(ambiguity) {
   if (ambiguity.type === 'day-month-order') {
-    return `Ambiguous date: ${ambiguity.pattern} - Use --resolution dd-mm-yyyy (European) or --resolution mm-dd-yyyy (US)`;
+    return `Ambiguous date: ${ambiguity.pattern} - Use --resolution dmy (for DD-MM-YYYY) or --resolution mdy (for MM-DD-YYYY)`;
   } else if (ambiguity.type === 'two-digit-year') {
     return `Ambiguous year: ${ambiguity.pattern} - Use --resolution 2000s or --resolution 1900s`;
   }
@@ -801,27 +821,47 @@ function generateAmbiguityMessage(ambiguity) {
  * @param {Array<string>} [options.includeExt=[]] - Extensions to include
  * @param {Array<string>} [options.excludeExt=[]] - Extensions to exclude
  * @param {Array<string>} [options.excludeDir=[]] - Directory names to exclude
- * @param {number} [options.depth=Infinity] - Maximum recursion depth
+ * @param {number} [options.depth=1] - Maximum recursion depth (1 = root only)
  * @returns {Promise<Object>} - Object with { results: Array<Object>, alreadyFormatted: number, noTimestamp: boolean, withoutTimestamp: number, skippedAmbiguous: Array<Object> }
  */
 export async function rename(targetPath, options = {}) {
+  // Merge with defaults for robust programmatic use
+  const config = {
+    format: 'yyyy-mm-dd hh.MM.ss',
+    copy: false,
+    copyFlat: false,
+    dryRun: true,
+    execute: false,
+    timeShiftMs: null,
+    ambiguityResolution: {},
+    interactive: false,
+    includeExt: [],
+    excludeExt: [],
+    excludeDir: [],
+    depth: 1,
+    noRevert: false,
+    onProgress: null,
+    onItemProcessed: null,
+    ...options,
+  };
+
   const {
-    format = 'yyyy-mm-dd hh.MM.ss',
-    copy = false,
-    copyFlat = false,
-    dryRun = true,
-    execute = false,
-    timeShiftMs = null,
-    ambiguityResolution = {},
-    interactive = false,
-    includeExt = [],
-    excludeExt = [],
-    excludeDir = [],
-    depth = Infinity,
-    noRevert = false,
-    onProgress = null,
-    onItemProcessed = null,
-  } = options;
+    format,
+    copy,
+    copyFlat,
+    dryRun,
+    execute,
+    timeShiftMs,
+    ambiguityResolution,
+    interactive,
+    includeExt,
+    excludeExt,
+    excludeDir,
+    depth,
+    noRevert,
+    onProgress,
+    onItemProcessed,
+  } = config;
 
   const stats = statSync(targetPath);
 
@@ -1037,15 +1077,27 @@ function discoverFilesWithoutTimestamps(targetPath) {
  * @returns {Promise<Object>} - Object with { results: Array<Object>, filesScanned: number, datesFound: number }
  */
 export async function renameUsingMetadata(targetPath, options = {}) {
+  // Merge with defaults for robust programmatic use
+  const config = {
+    format: 'yyyy-mm-dd hh.MM.ss',
+    dryRun: true,
+    execute: false,
+    metadataSource: 'earliest',
+    onProgress: null,
+    timeShiftMs: null,
+    cachedMetadata: null,
+    ...options,
+  };
+
   const {
-    format = 'yyyy-mm-dd hh.MM.ss',
-    dryRun = true,
-    execute = false,
-    metadataSource = 'earliest',
+    format,
+    dryRun,
+    execute,
+    metadataSource,
     onProgress,
-    timeShiftMs = null,
-    cachedMetadata = null, // Accept pre-extracted metadata to avoid re-scanning
-  } = options;
+    timeShiftMs,
+    cachedMetadata,
+  } = config;
 
   let metadataMap;
   let allFilesWithoutTimestamps; // Store to avoid re-scanning

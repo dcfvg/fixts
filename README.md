@@ -260,7 +260,7 @@ And many more! See [full format list](./DOCUMENTATION.md#supported-formats).
 | `--include-ext` | `-i` | Include only these extensions |
 | `--exclude-ext` | `-x` | Exclude these extensions (priority over include) |
 | `--exclude-dir` | `-X` | Exclude directories by name |
-| `--depth` | `-D` | Max recursion depth (default: unlimited) |
+| `--depth` | `-D` | Max recursion depth (default: 1 - root only) |
 | `--resolution` | | Resolve ambiguities (`dd-mm-yyyy`, `mm-dd-yyyy`, `2000s`, `1900s`) |
 | `--no-revert` | | Skip revert script generation (faster for large batches) |
 

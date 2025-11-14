@@ -48,7 +48,7 @@ echo ""
 
 # Test 5.1: Dry run finds all files recursively
 echo "📋 Test 5.1: Recursive discovery"
-OUTPUT=$(fixts . -d 2>&1)
+OUTPUT=$(fixts . -d --depth Infinity 2>&1)
 
 # Should find 5 files with timestamps
 if echo "$OUTPUT" | grep -q "Found 5 item(s) to rename"; then
@@ -87,7 +87,7 @@ fi
 # Test 5.3: Execute recursive rename
 echo ""
 echo "🔨 Test 5.3: Execute recursive rename"
-OUTPUT=$(fixts . -e 2>&1)
+OUTPUT=$(fixts . -e --depth Infinity 2>&1)
 
 if echo "$OUTPUT" | grep -q "Successfully renamed 5"; then
     echo -e "   ${GREEN}✓ All files renamed recursively${NC}"

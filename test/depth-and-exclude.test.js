@@ -159,6 +159,7 @@ describe('Depth and Directory Exclusion Tests', () => {
       const result = await rename(testDir, {
         format: 'yyyy-mm-dd hh.MM.ss',
         dryRun: true,
+        depth: Infinity,
         excludeDir: ['node_modules', '.git', 'temp'],
       });
 
@@ -233,6 +234,7 @@ describe('Depth and Directory Exclusion Tests', () => {
       const result = await rename(testDir, {
         format: 'yyyy-mm-dd hh.MM.ss',
         dryRun: true,
+        depth: Infinity,
         excludeDir: [],
       });
 
@@ -244,6 +246,7 @@ describe('Depth and Directory Exclusion Tests', () => {
       const result = await rename(testDir, {
         format: 'yyyy-mm-dd hh.MM.ss',
         dryRun: true,
+        depth: Infinity,
         excludeDir: ['non-existent-dir'],
       });
 

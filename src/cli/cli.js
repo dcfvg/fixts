@@ -46,7 +46,7 @@ function parseArgs(args) {
     excludeExt: [], // Exclude these extensions/directories
     noRevert: false, // Skip revert script generation
     copyFlat: false, // Flatten directory structure in copy mode
-    depth: Infinity, // Recursion depth (Infinity = unlimited, 1 = root only)
+    depth: 1, // Recursion depth (1 = root only, Infinity = unlimited)
   };
 
   for (let i = 2; i < args.length; i++) {
@@ -154,11 +154,19 @@ function parseArgs(args) {
       }
     } else if (arg === '--depth') {
       if (i + 1 < args.length) {
-        const depthValue = parseInt(args[++i], 10);
-        if (isNaN(depthValue) || depthValue < 1) {
-          logger.error(`❌ Invalid depth value: ${args[i]}`);
-          logger.error('   Depth must be a positive integer (1 = root only, 2 = root + 1 level, etc.)');
-          process.exit(1);
+        const depthArg = args[++i];
+        let depthValue;
+        
+        // Allow "Infinity" or "unlimited" as special values
+        if (depthArg.toLowerCase() === 'infinity' || depthArg.toLowerCase() === 'unlimited') {
+          depthValue = Infinity;
+        } else {
+          depthValue = parseInt(depthArg, 10);
+          if (isNaN(depthValue) || depthValue < 1) {
+            logger.error(`❌ Invalid depth value: ${depthArg}`);
+            logger.error('   Depth must be a positive integer or "Infinity" (1 = root only, 2 = root + 1 level, Infinity = unlimited)');
+            process.exit(1);
+          }
         }
         cliArgs.depth = depthValue;
       }
@@ -246,11 +254,12 @@ Options:
                          -x dir             Exclude all directories (files only)
                          -x mp3 dir txt     Exclude .mp3, .txt files AND directories
                        Note: Exclusion takes priority over inclusion
-  -d, --depth <n>      Maximum recursion depth (default: unlimited)
+  -d, --depth <n>      Maximum recursion depth (default: 1 - root only)
                        Examples:
                          -d 1               Process only root level (no subdirectories)
                          -d 2               Process root + 1 level of subdirectories
                          -d 3               Process root + 2 levels of subdirectories
+                         -d Infinity        Process all subdirectories (unlimited depth)
   -w, --wizard         Enable wizard mode with prompts for ambiguities
   --no-revert          Skip revert script generation (faster for large batches)
   -v, --verbose        Enable debug logging (show detailed processing information)
@@ -642,7 +651,7 @@ async function main() {
     quiet: false,
     noRevert: false,
     copyFlat: false,
-    depth: Infinity,
+    depth: 1,
     includeExt: [],
     excludeExt: [],
   };
