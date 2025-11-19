@@ -34,7 +34,7 @@ echo ""
 
 # Test 6.1: Rename files (generates revert script)
 echo "🔨 Test 6.1: Rename files and generate revert script"
-OUTPUT=$(fixts . -e --resolution dd-mm-yyyy --resolution 2000s 2>&1)
+OUTPUT=$(fixts . -e --resolution dd-mm-yyyy 2>&1)
 
 if [ -f "revert.sh" ]; then
     echo -e "   ${GREEN}✓ Revert script created${NC}"
@@ -129,7 +129,7 @@ echo "🔨 Test 6.5: Revert with subdirectories (known limitation)"
 mkdir -p subdir
 touch "subdir/2024-05-10-16-00-00-nested.txt"
 
-OUTPUT=$(fixts . -e --depth Infinity --resolution dd-mm-yyyy --resolution 2000s 2>&1)
+OUTPUT=$(fixts . -e --depth Infinity --resolution dd-mm-yyyy 2>&1)
 
 if [ -f "revert.sh" ]; then
     echo -e "   ${GREEN}✓ Revert script created${NC}"

@@ -65,6 +65,25 @@ function isSystemFile(filename) {
 }
 
 /**
+ * POSIX shell-safe quoting for paths (best-effort)
+ * @param {string} value - Path to quote
+ * @returns {string} - Single-quoted path with embedded quotes escaped
+ */
+function shellQuote(value) {
+  const normalized = String(value).replace(/\r?\n/g, ' ');
+  return `'${normalized.replace(/'/g, '\'"\'"\'')}'`;
+}
+
+/**
+ * Sanitize a value for inclusion in shell comments
+ * @param {string} value - Value to sanitize
+ * @returns {string} - Comment-safe value
+ */
+function sanitizeForComment(value) {
+  return String(value).replace(/[\r\n]+/g, ' ');
+}
+
+/**
  * Rename a file while preserving its timestamps (atime and mtime)
  * @param {string} oldPath - Original file path
  * @param {string} newPath - New file path
@@ -93,7 +112,8 @@ function renamePreservingTimestamps(oldPath, newPath) {
  */
 function createRevertScript(results, targetPath) {
   const resolvedBasePath = resolve(targetPath);
-  const safeBaseDir = resolvedBasePath.replace(/"/g, '\\"');
+  // Escape characters that would break double-quoted assignment
+  const safeBaseDir = resolvedBasePath.replace(/(["\\$`])/g, '\\$1');
 
   const scriptLines = [
     '#!/bin/bash',
@@ -103,7 +123,7 @@ function createRevertScript(results, targetPath) {
     '# while preserving creation and modification timestamps',
     '#',
     `# Generated: ${new Date().toISOString()}`,
-    `# Base directory: ${targetPath}`,
+    `# Base directory: ${sanitizeForComment(targetPath)}`,
     '#',
     '',
     'set -e  # Exit on error',
@@ -182,8 +202,8 @@ function createRevertScript(results, targetPath) {
       const oldRelPath = relative(targetPath, result.oldPath);
       const newRelPath = relative(targetPath, result.newPath);
 
-      scriptLines.push(`# Revert: ${newRelPath} -> ${oldRelPath}`);
-      scriptLines.push(`rename_with_timestamps "${newRelPath}" "${oldRelPath}"`);
+      scriptLines.push(`# Revert: ${sanitizeForComment(newRelPath)} -> ${sanitizeForComment(oldRelPath)}`);
+      scriptLines.push(`rename_with_timestamps ${shellQuote(newRelPath)} ${shellQuote(oldRelPath)}`);
       scriptLines.push('');
       count++;
     }
@@ -836,8 +856,6 @@ function processSingleFile(filePath, resolutions, options) {
 function generateAmbiguityMessage(ambiguity) {
   if (ambiguity.type === 'day-month-order') {
     return `Ambiguous date: ${ambiguity.pattern} - Use --resolution dmy (for DD-MM-YYYY) or --resolution mdy (for MM-DD-YYYY)`;
-  } else if (ambiguity.type === 'two-digit-year') {
-    return `Ambiguous year: ${ambiguity.pattern} - Use --resolution 2000s or --resolution 1900s`;
   }
   return 'Ambiguous date format - use --resolution or --interactive for manual resolution';
 }
@@ -951,8 +969,6 @@ export async function rename(targetPath, options = {}) {
         // Convert smart resolution format to our resolution format
         if (resolution === 'dmy' || resolution === 'mdy') {
           resolutions.set(filePath, resolution);
-        } else if (resolution === '2000s' || resolution === '1900s') {
-          resolutions.set(filePath, resolution);
         }
       }
 
@@ -972,10 +988,6 @@ export async function rename(targetPath, options = {}) {
         if (ambiguityResolution.dateFormat) {
           const dateFormat = ambiguityResolution.dateFormat === 'dd-mm-yyyy' ? 'dmy' : 'mdy';
           resolutions.set(itemPath, dateFormat);
-          resolved = true;
-        } else if (ambiguityResolution.century) {
-          const century = ambiguityResolution.century === '2000s' ? '2000s' : '1900s';
-          resolutions.set(itemPath, century);
           resolved = true;
         }
 
@@ -1253,6 +1265,7 @@ export async function renameUsingMetadata(targetPath, options = {}) {
         filesScanned: 0,
         datesFound: 0,
         skippedNoMetadata: [],
+        revertScriptPath: null,
       };
     }
 
@@ -1354,11 +1367,22 @@ export async function renameUsingMetadata(targetPath, options = {}) {
     results.push(result);
   }
 
+  // Create revert script for metadata-based renames (rename mode only)
+  let revertScriptPath = null;
+  if (!copy && !dryRun && execute && results.some(r => r.success && !r.error)) {
+    try {
+      revertScriptPath = createRevertScript(results, baseDirForCopy);
+    } catch (error) {
+      console.error('Warning: Could not create revert script:', error.message);
+    }
+  }
+
   return {
     results,
     filesScanned: allFilesWithoutTimestamps.length,
     datesFound: metadataMap.size,
     skippedNoMetadata,
     metadataMap, // Return the metadata map for caching
+    revertScriptPath,
   };
 }

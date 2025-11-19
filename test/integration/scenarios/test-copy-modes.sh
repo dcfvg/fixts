@@ -45,7 +45,7 @@ echo "📋 Test 1: Default --copy (preserve subdirectories)"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
-OUTPUT=$(fixts "$TEST_DIR" --copy --execute --depth Infinity --resolution dd-mm-yyyy --resolution 2000s 2>&1)
+OUTPUT=$(fixts "$TEST_DIR" --copy --execute --depth Infinity --resolution dd-mm-yyyy 2>&1)
 
 if echo "$OUTPUT" | grep -q "Successfully copied 4 item(s)"; then
     echo -e "   ${GREEN}✓ Copied 4 files${NC}"
@@ -121,7 +121,7 @@ echo ""
 # Clean previous _c directory
 rm -rf "$TEST_DIR/_c"
 
-OUTPUT=$(fixts "$TEST_DIR" --copy-flat --execute --depth Infinity --resolution dd-mm-yyyy --resolution 2000s 2>&1)
+OUTPUT=$(fixts "$TEST_DIR" --copy-flat --execute --depth Infinity --resolution dd-mm-yyyy 2>&1)
 
 if echo "$OUTPUT" | grep -q "Successfully copied 4 item(s)"; then
     echo -e "   ${GREEN}✓ Copied 4 files${NC}"

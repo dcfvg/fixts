@@ -39,8 +39,8 @@ echo ""
 
 # Test 1.1: Dry run
 echo "📋 Test 1.1: Dry run (preview)"
-echo "   Command: fixts . -d --resolution dd-mm-yyyy --resolution 2000s"
-OUTPUT=$(fixts . -d --resolution dd-mm-yyyy --resolution 2000s 2>&1)
+echo "   Command: fixts . -d --resolution dd-mm-yyyy"
+OUTPUT=$(fixts . -d --resolution dd-mm-yyyy 2>&1)
 
 if echo "$OUTPUT" | grep -q "Found.*item(s) to rename"; then
     echo -e "   ${GREEN}✓ Dry run executed${NC}"
@@ -60,8 +60,8 @@ fi
 # Test 1.2: Execute rename
 echo ""
 echo "🔨 Test 1.2: Execute rename"
-echo "   Command: fixts . -e --resolution dd-mm-yyyy --resolution 2000s"
-OUTPUT=$(fixts . -e --resolution dd-mm-yyyy --resolution 2000s 2>&1)
+echo "   Command: fixts . -e --resolution dd-mm-yyyy"
+OUTPUT=$(fixts . -e --resolution dd-mm-yyyy 2>&1)
 
 if echo "$OUTPUT" | grep -q "Successfully renamed"; then
     COUNT=$(echo "$OUTPUT" | grep -oE 'Successfully renamed [0-9]+' | grep -oE '[0-9]+')

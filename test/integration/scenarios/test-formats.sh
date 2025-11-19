@@ -97,7 +97,7 @@ fi
 # Test 4.6: Execute with format
 echo ""
 echo "🔨 Test 4.6: Execute with custom format"
-OUTPUT=$(fixts . --format yyyymmdd_hhMMss -e --resolution dd-mm-yyyy --resolution 2000s 2>&1)
+OUTPUT=$(fixts . --format yyyymmdd_hhMMss -e --resolution dd-mm-yyyy 2>&1)
 
 if ls -1 | grep -q "20240115_143045"; then
     echo -e "   ${GREEN}✓ Format applied in execute mode${NC}"

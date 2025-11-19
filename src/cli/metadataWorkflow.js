@@ -202,6 +202,11 @@ export async function executeMetadataWorkflow(targetPath, options = {}) {
     });
   }
 
+  if (applyResult.revertScriptPath) {
+    console.log(`\n💾 Revert script created: ${applyResult.revertScriptPath}`);
+    console.log('   Run this script to undo the renaming while preserving timestamps');
+  }
+
   return {
     success: true,
     filesScanned,
@@ -209,6 +214,7 @@ export async function executeMetadataWorkflow(targetPath, options = {}) {
     renamed: successful,
     failed,
     results: applyResults,
+    revertScriptPath: applyResult.revertScriptPath || null,
   };
 }
 

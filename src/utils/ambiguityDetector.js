@@ -33,8 +33,6 @@ export async function promptAmbiguityResolution(ambiguity) {
 
     if (ambiguity.type === 'day-month-order') {
       console.log(`   Is "${ambiguity.first}-${ambiguity.second}" day-month or month-day?\n`);
-    } else if (ambiguity.type === 'two-digit-year') {
-      console.log(`   Is "${ambiguity.year}" from 19xx or 20xx?\n`);
     }
 
     ambiguity.options.forEach((option, index) => {
@@ -123,15 +121,6 @@ export async function resolveAmbiguities(filenames, presetResolutions = {}) {
         const option = firstAmbiguity.options.find(opt =>
           (presetResolutions.dateFormat === 'dd-mm-yyyy' && opt.value === 'dmy') ||
           (presetResolutions.dateFormat === 'mm-dd-yyyy' && opt.value === 'mdy')
-        );
-        if (option) {
-          presetChoice = option.value;
-        }
-      } else if (type === 'two-digit-year' && presetResolutions.century) {
-        // Map preset to option value
-        const option = firstAmbiguity.options.find(opt =>
-          (presetResolutions.century === '2000s' && opt.label.includes('2000s')) ||
-          (presetResolutions.century === '1900s' && opt.label.includes('1900s'))
         );
         if (option) {
           presetChoice = option.value;

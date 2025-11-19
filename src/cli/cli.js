@@ -132,14 +132,10 @@ function parseArgs(args) {
           cliArgs.ambiguityResolution.dateFormat = 'dd-mm-yyyy';
         } else if (resolution === 'mm-dd-yyyy' || resolution === 'us' || resolution === 'american') {
           cliArgs.ambiguityResolution.dateFormat = 'mm-dd-yyyy';
-        } else if (resolution === '2000s' || resolution === '2000' || resolution === '20xx') {
-          cliArgs.ambiguityResolution.century = '2000s';
-        } else if (resolution === '1900s' || resolution === '1900' || resolution === '19xx') {
-          cliArgs.ambiguityResolution.century = '1900s';
         } else {
           logger.error(`❌ Invalid resolution value: ${resolution}`);
-          logger.error('   Valid values: dd-mm-yyyy, mm-dd-yyyy, 2000s, 1900s');
-          logger.error('   Aliases: eu/european, us/american, 20xx, 19xx');
+          logger.error('   Valid values: dd-mm-yyyy, mm-dd-yyyy');
+          logger.error('   Aliases: eu/european, us/american');
           process.exit(1);
         }
       }
@@ -243,11 +239,9 @@ Options:
                        Values:
                          dd-mm-yyyy, eu, european    European date format (day-month-year)
                          mm-dd-yyyy, us, american    US date format (month-day-year)
-                         2000s, 20xx                 Two-digit years are 20xx
-                         1900s, 19xx                 Two-digit years are 19xx
                        Examples:
-                         --resolution eu --resolution 2000s
-                         --resolution us --resolution 1900s
+                         --resolution eu
+                         --resolution us
   -t, --table          Show detailed table format with metadata sources
   -i, --include-ext <items...>  Include only specified items (extensions and/or 'dir')
                        Use 'dir' keyword to include directories in processing
@@ -432,15 +426,12 @@ async function interactiveWorkflow(targetPath, options) {
 
     // Check if we have preset resolutions
     const hasPresetResolutions = options.ambiguityResolution &&
-      (options.ambiguityResolution.dateFormat || options.ambiguityResolution.century);
+      options.ambiguityResolution.dateFormat;
 
     if (hasPresetResolutions) {
       logger.info('✓ Using preset ambiguity resolutions:');
       if (options.ambiguityResolution.dateFormat) {
         logger.info(`  - Date format: ${options.ambiguityResolution.dateFormat}`);
-      }
-      if (options.ambiguityResolution.century) {
-        logger.info(`  - Two-digit years: ${options.ambiguityResolution.century}`);
       }
       logger.info('');
     } else if (options.wizard) {
@@ -455,7 +446,7 @@ async function interactiveWorkflow(targetPath, options) {
     } else {
       logger.info('⚠️  Warning: Ambiguous dates detected but no resolution provided.');
       logger.info('   Use --resolution flags to specify how to handle ambiguous dates.');
-      logger.info('   Examples: --resolution eu --resolution 2000s\n');
+      logger.info('   Example: --resolution eu\n');
     }
   }
 
@@ -643,6 +634,10 @@ async function interactiveWorkflow(targetPath, options) {
     logger.info(`✅ Successfully renamed ${successful} file(s) using metadata`);
     if (failed > 0) {
       logger.info(`❌ Failed to rename ${failed} file(s)`);
+    }
+    if (metadataRenameResult.revertScriptPath && !options.copy) {
+      logger.info(`\n💾 Revert script created: ${metadataRenameResult.revertScriptPath}`);
+      logger.info('   Run this script to undo the renaming while preserving timestamps');
     }
   }
 
@@ -978,9 +973,9 @@ async function main() {
       for (const [type, items] of Object.entries(byType)) {
         const resolutionHint = type === 'day-month-order'
           ? 'Use --resolution dd-mm-yyyy (DD-MM-YYYY) or --resolution mm-dd-yyyy (MM-DD-YYYY)'
-          : 'Use --resolution 2000s or --resolution 1900s';
+          : 'Provide a resolution with --resolution flags.';
 
-        logger.info(`  ${type === 'day-month-order' ? 'Day-Month ambiguity' : 'Two-digit year ambiguity'}: ${items.length} file(s)`);
+        logger.info(`  ${type === 'day-month-order' ? 'Day-Month ambiguity' : 'Ambiguity'}: ${items.length} file(s)`);
         logger.info(`  ${resolutionHint}`);
 
         items.slice(0, 3).forEach(item => {
@@ -1064,16 +1059,11 @@ async function main() {
 
         if (skippedAmbiguous && skippedAmbiguous.length > 0) {
           const hasDayMonth = skippedAmbiguous.some(item => item.ambiguity.type === 'day-month-order');
-          const hasYear = skippedAmbiguous.some(item => item.ambiguity.type === 'two-digit-year');
 
           logger.info('  To process ambiguous files:');
           if (hasDayMonth) {
             logger.info(`    fixts "${basename(targetPath)}" --resolution dd-mm-yyyy --execute  # For DD-MM-YYYY`);
             logger.info(`    fixts "${basename(targetPath)}" --resolution mm-dd-yyyy --execute  # For MM-DD-YYYY`);
-          }
-          if (hasYear) {
-            logger.info(`    fixts "${basename(targetPath)}" --resolution 2000s --execute`);
-            logger.info(`    fixts "${basename(targetPath)}" --resolution 1900s --execute`);
           }
           logger.info('  Or use interactive mode:');
           logger.info(`    fixts "${basename(targetPath)}" --wizard --execute`);

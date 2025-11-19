@@ -106,8 +106,8 @@ export function validateConfig(config) {
   }
 
   // Validate resolution
-  if (config.resolution && !['dd-mm-yyyy', 'mm-dd-yyyy', '2000s', '1900s'].includes(config.resolution)) {
-    errors.push(`Invalid resolution: ${config.resolution}. Must be one of: dd-mm-yyyy, mm-dd-yyyy, 2000s, 1900s`);
+  if (config.resolution && !['dd-mm-yyyy', 'mm-dd-yyyy'].includes(config.resolution)) {
+    errors.push(`Invalid resolution: ${config.resolution}. Must be one of: dd-mm-yyyy, mm-dd-yyyy`);
   }
 
   // Validate depth

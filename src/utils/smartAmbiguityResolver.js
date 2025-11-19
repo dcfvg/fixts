@@ -93,60 +93,6 @@ function resolveDayMonthAmbiguity(filePath, ambiguity) {
 }
 
 /**
- * Resolve two-digit year ambiguity using mtime heuristic
- * @param {string} filePath - Path to file
- * @param {object} ambiguity - Ambiguity object from detectAmbiguity
- * @returns {object} - { resolution: '2000s'|'1900s', confidence: number, suggestion: string }
- * @private
- */
-function resolveTwoDigitYearAmbiguity(filePath, ambiguity) {
-  try {
-    const stats = statSync(filePath);
-    const mtime = stats.mtime;
-    const mtimeYear = mtime.getFullYear();
-
-    // Extract month and day from pattern (e.g., "241103_143045")
-    const match = ambiguity.pattern.match(/(\d{2})(\d{2})(\d{2})/);
-    if (!match) {
-      return { resolution: null, confidence: 50, suggestion: null };
-    }
-
-    const yy = parseInt(match[1], 10);
-    const mm = parseInt(match[2], 10);
-    const dd = parseInt(match[3], 10);
-
-    // Try both interpretations
-    const date2000s = new Date(2000 + yy, mm - 1, dd);
-    const date1900s = new Date(1900 + yy, mm - 1, dd);
-
-    // Calculate confidence for each
-    const confidence2000s = calculateConfidence(date2000s, mtime);
-    const confidence1900s = calculateConfidence(date1900s, mtime);
-
-    // Choose interpretation with higher confidence
-    if (confidence2000s > confidence1900s) {
-      return {
-        resolution: '2000s',
-        confidence: confidence2000s,
-        suggestion: `File mtime (${mtimeYear}) suggests 20${String(yy).padStart(2, '0')}`,
-        alternativeConfidence: confidence1900s,
-      };
-    } else {
-      return {
-        resolution: '1900s',
-        confidence: confidence1900s,
-        suggestion: `File mtime (${mtimeYear}) suggests 19${String(yy).padStart(2, '0')}`,
-        alternativeConfidence: confidence2000s,
-      };
-    }
-  } catch (error) {
-    // If we can't read file stats, return neutral
-    logger.debug('Could not read file stats for year ambiguity resolution:', { filePath, error: error.message });
-    return { resolution: null, confidence: 50, suggestion: null };
-  }
-}
-
-/**
  * Get month name from month number
  * @param {number} month - Month number (1-12)
  * @returns {string} - Month name
@@ -175,11 +121,6 @@ export function analyzeAmbiguousFile(filePath, filename = null) {
     return {
       ...ambiguity,
       smart: resolveDayMonthAmbiguity(filePath, ambiguity),
-    };
-  } else if (ambiguity.type === 'two-digit-year') {
-    return {
-      ...ambiguity,
-      smart: resolveTwoDigitYearAmbiguity(filePath, ambiguity),
     };
   }
 

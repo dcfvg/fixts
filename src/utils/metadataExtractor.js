@@ -8,7 +8,7 @@
  */
 
 import { statSync, openSync, readSync, closeSync } from 'fs';
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { formatDate } from '../core/formatter.js';
 import { applyTimeShift } from './timeShift.js';
@@ -32,7 +32,7 @@ import {
  * See fixts-webapp/src/lib/exif.ts for browser implementation example.
  */
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 // Cache for external tool availability (checked once per session)
 let toolAvailability = null;
@@ -53,7 +53,7 @@ async function checkToolAvailability() {
 
   // Check exiftool
   try {
-    await execAsync('exiftool -ver 2>/dev/null');
+    await execFileAsync('exiftool', ['-ver'], { timeout: 2000 });
     tools.exiftool = true;
   } catch {
     // exiftool not available
@@ -62,7 +62,7 @@ async function checkToolAvailability() {
   // Check mdls (macOS only)
   if (process.platform === 'darwin') {
     try {
-      await execAsync('which mdls 2>/dev/null');
+      await execFileAsync('mdls', ['-name', 'kMDItemContentCreationDate', '/'], { timeout: 2000 });
       tools.mdls = true;
     } catch {
       // mdls not available
@@ -256,7 +256,11 @@ async function tryExternalTools(filePath, ext) {
   // Try with exiftool if available
   if (tools.exiftool) {
     try {
-      const { stdout } = await execAsync(`exiftool -DateTimeOriginal -d "%Y-%m-%d %H:%M:%S" "${filePath}" 2>/dev/null`);
+      const { stdout } = await execFileAsync(
+        'exiftool',
+        ['-DateTimeOriginal', '-d', '%Y-%m-%d %H:%M:%S', filePath],
+        { timeout: 5000, maxBuffer: 1024 * 512 }
+      );
 
       const match = stdout.match(/Date\/Time Original\s*:\s*(.+)/);
       if (match) {
@@ -279,7 +283,11 @@ async function tryExternalTools(filePath, ext) {
   // Try with mdls on macOS if available
   if (tools.mdls) {
     try {
-      const { stdout } = await execAsync(`mdls -name kMDItemContentCreationDate "${filePath}" 2>/dev/null`);
+      const { stdout } = await execFileAsync(
+        'mdls',
+        ['-name', 'kMDItemContentCreationDate', filePath],
+        { timeout: 5000, maxBuffer: 1024 * 256 }
+      );
 
       const match = stdout.match(/kMDItemContentCreationDate = (.+)/);
       if (match) {
