@@ -213,6 +213,12 @@ function removeTimestampPatterns(filename, primaryTimestamp = null) {
     cleaned = (before + after).replace(/^[-_\s]+|[-_\s]+$/g, '').trim();
   }
 
+  // Heuristic second pass: strip any additional date/time tokens that may remain
+  // This catches chained timestamps like "...-2018-01-24_13.00.04-..." that differ from the primary one.
+  const residualDatePattern = /(?:^|[\s._-])((?:19|20)\d{2}[._-]?\d{2}[._-]?\d{2}(?:[ T._-]?\d{2}[.:]\d{2}(?:[.:]\d{2})?)?)(?=$|[\s._-])/g;
+  cleaned = cleaned.replace(residualDatePattern, ' ');
+  cleaned = cleaned.replace(/\s{2,}/g, ' ').trim();
+
   return cleaned;
 }
 

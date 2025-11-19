@@ -38,10 +38,31 @@ export function applyCleaningPatterns(filename) {
   // Example: "100658Recording" → "100658 Recording"
   cleaned = cleaned.replace(/(\d{6,})([a-zA-Z])/g, '$1 $2');
 
-  // 5. Collapse multiple spaces
+  // 5. De-duplicate very long numeric IDs to reduce noise (keep first two unique)
+  const tokens = cleaned.split(/\s+/);
+  const seenLongNumbers = new Set();
+  const filteredTokens = [];
+  let longNumberCount = 0;
+
+  tokens.forEach((token) => {
+    if (/^\d{10,}$/.test(token)) {
+      if (seenLongNumbers.has(token) || longNumberCount >= 2) {
+        return; // Skip duplicate or excess long IDs
+      }
+      seenLongNumbers.add(token);
+      longNumberCount++;
+    }
+    if (token) {
+      filteredTokens.push(token);
+    }
+  });
+
+  cleaned = filteredTokens.join(' ');
+
+  // 6. Collapse multiple spaces
   cleaned = cleaned.replace(/\s{2,}/g, ' ');
 
-  // 6. Remove leading/trailing separators and whitespace
+  // 7. Remove leading/trailing separators and whitespace
   cleaned = cleaned
     .replace(/\.{2,}/g, '.')           // Collapse consecutive dots
     .replace(/^[-_\s.—]+/, '')         // Remove leading separators
