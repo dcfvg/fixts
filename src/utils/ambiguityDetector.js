@@ -11,6 +11,7 @@
  */
 
 import readline from 'readline';
+import { basename } from 'path';
 
 // Import and re-export core detection logic
 import { detectAmbiguity } from './ambiguityDetector-core.js';
@@ -64,23 +65,45 @@ export async function promptAmbiguityResolution(ambiguity) {
 /**
  * Batch process ambiguities for multiple files
  * In interactive mode, prompts once per ambiguity type and applies to all similar files
- * @param {Array<string>} filenames - List of filenames to check
+ * @param {Array<string|{name?: string, path?: string, filename?: string}>} filenames - List of filenames (or objects with name/path)
  * @param {Object} presetResolutions - Optional preset resolutions {dateFormat: 'dd-mm-yyyy'|'mm-dd-yyyy', century: '2000s'|'1900s'}
- * @returns {Promise<Object>} - Map of filename -> resolution choice
+ * @returns {Promise<Object>} - Map of identifier -> resolution choice (paths when provided)
  */
+function normalizeAmbiguityInputs(items) {
+  return items.map((item, index) => {
+    if (typeof item === 'string') {
+      return {
+        name: item,
+        key: item,
+        path: null,
+      };
+    }
+
+    const inferredName = item.name || item.filename || (item.path ? basename(item.path) : `item-${index + 1}`);
+    const key = item.path || `${inferredName}#${index}`;
+
+    return {
+      name: inferredName,
+      key,
+      path: item.path || null,
+    };
+  });
+}
+
 export async function resolveAmbiguities(filenames, presetResolutions = {}) {
   const resolutions = new Map();
   const ambiguitiesByType = new Map(); // Group ambiguities by type
+  const normalizedItems = normalizeAmbiguityInputs(filenames);
 
   // Step 1: Group all ambiguities by type
-  for (const filename of filenames) {
-    const ambiguity = detectAmbiguity(filename);
+  for (const item of normalizedItems) {
+    const ambiguity = detectAmbiguity(item.name);
 
     if (ambiguity) {
       if (!ambiguitiesByType.has(ambiguity.type)) {
         ambiguitiesByType.set(ambiguity.type, []);
       }
-      ambiguitiesByType.get(ambiguity.type).push({ filename, ambiguity });
+      ambiguitiesByType.get(ambiguity.type).push({ item, ambiguity });
     }
   }
 
@@ -114,8 +137,8 @@ export async function resolveAmbiguities(filenames, presetResolutions = {}) {
 
     // If we have a preset choice, apply to all items of this type
     if (presetChoice) {
-      for (const { filename } of items) {
-        resolutions.set(filename, presetChoice);
+      for (const { item } of items) {
+        resolutions.set(item.key, presetChoice);
       }
       continue;
     }
@@ -123,8 +146,8 @@ export async function resolveAmbiguities(filenames, presetResolutions = {}) {
     // No preset: prompt once for this ambiguity type
     console.log(`\n⚠️  Found ${items.length} file(s) with ambiguous ${type === 'day-month-order' ? 'date order' : 'year'} format.\n`);
     console.log('Example files:');
-    items.slice(0, 3).forEach(({ filename }) => {
-      console.log(`  - ${filename}`);
+    items.slice(0, 3).forEach(({ item }) => {
+      console.log(`  - ${item.name}`);
     });
     if (items.length > 3) {
       console.log(`  ... and ${items.length - 3} more\n`);
@@ -136,8 +159,8 @@ export async function resolveAmbiguities(filenames, presetResolutions = {}) {
     const choice = await promptAmbiguityResolution(firstAmbiguity);
 
     // Apply choice to all items of this type
-    for (const { filename } of items) {
-      resolutions.set(filename, choice);
+    for (const { item } of items) {
+      resolutions.set(item.key, choice);
     }
 
     if (choice !== 'skip') {

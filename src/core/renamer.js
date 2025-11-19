@@ -6,8 +6,8 @@
  * @requires path
  */
 
-import { join, dirname, basename, relative } from 'path';
-import { readdirSync, statSync, renameSync, copyFileSync, mkdirSync, existsSync, utimesSync, writeFileSync } from 'fs';
+import { join, dirname, basename, relative, resolve } from 'path';
+import { readdirSync, statSync, lstatSync, renameSync, copyFileSync, mkdirSync, existsSync, utimesSync, writeFileSync } from 'fs';
 import { generateNewName } from './formatter.js';
 import { detectAmbiguity, resolveAmbiguities } from '../utils/ambiguityDetector.js';
 import { extractDatesFromFiles, formatMetadataDate } from '../utils/metadataExtractor.js';
@@ -92,6 +92,9 @@ function renamePreservingTimestamps(oldPath, newPath) {
  * @returns {string} - Path to the created revert script
  */
 function createRevertScript(results, targetPath) {
+  const resolvedBasePath = resolve(targetPath);
+  const safeBaseDir = resolvedBasePath.replace(/"/g, '\\"');
+
   const scriptLines = [
     '#!/bin/bash',
     '#',
@@ -104,6 +107,13 @@ function createRevertScript(results, targetPath) {
     '#',
     '',
     'set -e  # Exit on error',
+    '',
+    `BASE_DIR="${safeBaseDir}"`,
+    'if [ ! -d "$BASE_DIR" ]; then',
+    '  echo "Error: Base directory not found: $BASE_DIR"',
+    '  exit 1',
+    'fi',
+    'cd "$BASE_DIR"',
     '',
     '# Function to rename while preserving timestamps',
     'rename_with_timestamps() {',
@@ -367,13 +377,21 @@ function processItem(path, options) {
   return processItemBase(path, options, null);
 }
 
+function getResolutionForPath(resolutions, fullPath, fallbackName) {
+  return resolutions.get(fullPath) ?? resolutions.get(fallbackName);
+}
+
 /**
  * Copy a file or directory recursively while preserving timestamps
  * @param {string} source - Source path
  * @param {string} destination - Destination path
  */
 function copyRecursive(source, destination) {
-  const stats = statSync(source);
+  const stats = lstatSync(source);
+
+  if (stats.isSymbolicLink()) {
+    return; // Skip symlinks to prevent recursion outside target tree
+  }
 
   if (stats.isDirectory()) {
     // Create destination directory
@@ -465,7 +483,11 @@ async function findItemsWithTimestamps(dirPath, format = 'yyyy-mm-dd hh.MM.ss', 
     }
 
     const fullPath = join(dirPath, item);
-    const stats = statSync(fullPath);
+    const stats = lstatSync(fullPath);
+
+    if (stats.isSymbolicLink()) {
+      return; // Ignore symlinks entirely to avoid cycles
+    }
 
     if (stats.isFile()) {
       const ext = item.split('.').pop().toLowerCase();
@@ -589,7 +611,10 @@ async function findItemsWithTimestamps(dirPath, format = 'yyyy-mm-dd hh.MM.ss', 
  * @returns {Promise<Object>} - { toRename: Array<{path, newName, oldName}>, alreadyFormatted: Array<string>, withoutTimestamp: Array<string> }
  */
 async function discoverItems(targetPath, format = 'yyyy-mm-dd hh.MM.ss', parsingOptions = {}, includeExt = [], excludeExt = [], excludeDir = [], maxDepth = 1) {
-  const stats = statSync(targetPath);
+  const stats = lstatSync(targetPath);
+  if (stats.isSymbolicLink()) {
+    throw new Error(`Symbolic links are not supported: ${targetPath}`);
+  }
 
   if (stats.isDirectory()) {
     return await findItemsWithTimestamps(targetPath, format, parsingOptions, includeExt, excludeExt, excludeDir, maxDepth);
@@ -663,7 +688,10 @@ async function resolveAllAmbiguities(ambiguousFiles, presetResolutions = {}) {
 
   console.log(`\n⚠️  Found ${ambiguousFiles.length} file(s) with ambiguous date formats.\n`);
 
-  const filenames = ambiguousFiles.map((f) => f.name);
+  const filenames = ambiguousFiles.map((f) => ({
+    name: f.name,
+    path: f.path,
+  }));
   return await resolveAmbiguities(filenames, presetResolutions);
 }
 
@@ -690,7 +718,7 @@ function processItemsInCopyMode(items, targetPath, resolutions, options) {
   sortedItems.forEach((item) => {
     const itemPath = item.path || item;
     const name = item.oldName || basename(itemPath);
-    const resolution = resolutions.get(name);
+    const resolution = getResolutionForPath(resolutions, itemPath, name);
 
     if (resolution === 'skip') {
       return;
@@ -735,7 +763,7 @@ function processItemsInRenameMode(items, resolutions, options) {
   sortedItems.forEach((item) => {
     const itemPath = item.path || item;
     const name = item.oldName || basename(itemPath);
-    const resolution = resolutions.get(name);
+    const resolution = getResolutionForPath(resolutions, itemPath, name);
 
     if (resolution === 'skip') {
       return;
@@ -768,7 +796,7 @@ function processItemsInRenameMode(items, resolutions, options) {
 function processSingleFile(filePath, resolutions, options) {
   const { format, dryRun, execute, copy, timeShiftMs } = options;
   const name = basename(filePath);
-  const resolution = resolutions.get(name);
+  const resolution = getResolutionForPath(resolutions, filePath, name);
 
   if (resolution === 'skip') {
     return null;
@@ -863,7 +891,10 @@ export async function rename(targetPath, options = {}) {
     onItemProcessed,
   } = config;
 
-  const stats = statSync(targetPath);
+  const stats = lstatSync(targetPath);
+  if (stats.isSymbolicLink()) {
+    throw new Error(`Symbolic links are not supported: ${targetPath}`);
+  }
 
   // Prepare parsing options for discovery phase
   const parsingOptions = {};
@@ -910,21 +941,22 @@ export async function rename(targetPath, options = {}) {
       smartResolutions = batchAnalyzeAmbiguousFiles(filesForAnalysis, 80);
 
       // Apply smart resolutions
-      for (const [name, resolution] of smartResolutions.autoResolved) {
+      for (const [filePath, resolution] of smartResolutions.autoResolved) {
         // Convert smart resolution format to our resolution format
         if (resolution === 'dmy' || resolution === 'mdy') {
-          resolutions.set(name, resolution);
+          resolutions.set(filePath, resolution);
         } else if (resolution === '2000s' || resolution === '1900s') {
-          resolutions.set(name, resolution);
+          resolutions.set(filePath, resolution);
         }
       }
 
       // Process remaining items
       for (const item of ambiguous) {
         const name = item.oldName || basename(item.path || item);
+        const itemPath = item.path || item;
 
         // Skip if already resolved by smart resolver
-        if (resolutions.has(name)) {
+        if (resolutions.has(itemPath)) {
           continue;
         }
 
@@ -933,27 +965,27 @@ export async function rename(targetPath, options = {}) {
         // Check if we have a preset resolution for this ambiguity type
         if (ambiguityResolution.dateFormat) {
           const dateFormat = ambiguityResolution.dateFormat === 'dd-mm-yyyy' ? 'dmy' : 'mdy';
-          resolutions.set(name, dateFormat);
+          resolutions.set(itemPath, dateFormat);
           resolved = true;
         } else if (ambiguityResolution.century) {
           const century = ambiguityResolution.century === '2000s' ? '2000s' : '1900s';
-          resolutions.set(name, century);
+          resolutions.set(itemPath, century);
           resolved = true;
         }
 
         // If no preset resolution and not auto-resolved, skip this file
         if (!resolved) {
           // Find the analysis for this file
-          const analysis = smartResolutions.needsPrompt.find(f => f.name === name);
+          const analysis = smartResolutions.needsPrompt.find(f => f.path === itemPath);
 
           skippedAmbiguous.push({
             name,
-            path: item.path,
+            path: itemPath,
             ambiguity: item.ambiguity,
             message: generateAmbiguityMessage(item.ambiguity),
             smart: analysis?.analysis?.smart || null,
           });
-          resolutions.set(name, 'skip');
+          resolutions.set(itemPath, 'skip');
         }
       }
     }
@@ -1002,9 +1034,24 @@ export async function rename(targetPath, options = {}) {
  * @param {string} dirPath - Directory path
  * @returns {Array<string>} - Array of file paths without timestamps
  */
-function findFilesWithoutTimestamps(dirPath) {
+function findFilesWithoutTimestamps(dirPath, options = {}, currentDepth = 1) {
   const filesWithoutTimestamps = [];
   const items = readdirSync(dirPath);
+  const {
+    includeExt = [],
+    excludeExt = [],
+    excludeDir = [],
+    maxDepth = Infinity,
+  } = options;
+
+  const includeDirectories = includeExt.includes('dir');
+  const excludeDirectories = excludeExt.includes('dir');
+  const includeExtFiltered = includeExt
+    .filter(ext => ext !== 'dir')
+    .map(ext => ext.toLowerCase());
+  const excludeExtFiltered = excludeExt
+    .filter(ext => ext !== 'dir')
+    .map(ext => ext.toLowerCase());
 
   items.forEach((item) => {
     // Skip system files
@@ -1012,14 +1059,49 @@ function findFilesWithoutTimestamps(dirPath) {
       return;
     }
 
+    if (item === '_c') {
+      return;
+    }
+
     const fullPath = join(dirPath, item);
-    const stats = statSync(fullPath);
+    const stats = lstatSync(fullPath);
+
+    if (stats.isSymbolicLink()) {
+      return;
+    }
 
     if (stats.isDirectory()) {
+      if (excludeDirectories) {
+        return;
+      }
+
+      if (excludeDir.length > 0 && excludeDir.includes(item)) {
+        return;
+      }
+
+      if (currentDepth >= maxDepth) {
+        return;
+      }
+
       // Recursively search directories
-      const subFiles = findFilesWithoutTimestamps(fullPath);
+      const subFiles = findFilesWithoutTimestamps(fullPath, options, currentDepth + 1);
       filesWithoutTimestamps.push(...subFiles);
     } else {
+      const ext = item.split('.').pop().toLowerCase();
+
+      if (excludeExtFiltered.length > 0 && excludeExtFiltered.includes(ext)) {
+        return;
+      }
+
+      if (includeExt.length > 0) {
+        if (includeExtFiltered.length === 0 && includeDirectories) {
+          return;
+        }
+        if (includeExtFiltered.length > 0 && !includeExtFiltered.includes(ext)) {
+          return;
+        }
+      }
+
       // Check if file has a timestamp in name
       const newName = generateNewName(item);
       if (!newName) {
@@ -1047,15 +1129,37 @@ function findFilesWithoutTimestamps(dirPath) {
  * @param {string} targetPath - Path to file or directory
  * @returns {Array<string>} - Array of file paths without timestamps
  */
-function discoverFilesWithoutTimestamps(targetPath) {
-  const stats = statSync(targetPath);
+function discoverFilesWithoutTimestamps(targetPath, options = {}) {
+  const stats = lstatSync(targetPath);
+
+  if (stats.isSymbolicLink()) {
+    return [];
+  }
 
   if (stats.isDirectory()) {
-    return findFilesWithoutTimestamps(targetPath);
+    const depth = options.depth ?? 1;
+    return findFilesWithoutTimestamps(targetPath, {
+      includeExt: options.includeExt,
+      excludeExt: options.excludeExt,
+      excludeDir: options.excludeDir,
+      maxDepth: depth === Infinity ? Infinity : depth,
+    });
   }
 
   // Single file
   const name = basename(targetPath);
+  const ext = name.split('.').pop().toLowerCase();
+  const includeExt = (options.includeExt || []).map(value => value.toLowerCase());
+  const excludeExt = (options.excludeExt || []).map(value => value.toLowerCase());
+
+  if (excludeExt.length > 0 && excludeExt.includes(ext)) {
+    return [];
+  }
+
+  if (includeExt.length > 0 && !includeExt.includes(ext)) {
+    return [];
+  }
+
   const newName = generateNewName(name);
 
   if (!newName) {
@@ -1086,6 +1190,12 @@ export async function renameUsingMetadata(targetPath, options = {}) {
     onProgress: null,
     timeShiftMs: null,
     cachedMetadata: null,
+    includeExt: [],
+    excludeExt: [],
+    excludeDir: [],
+    depth: 1,
+    copy: false,
+    copyFlat: false,
     ...options,
   };
 
@@ -1097,19 +1207,36 @@ export async function renameUsingMetadata(targetPath, options = {}) {
     onProgress,
     timeShiftMs,
     cachedMetadata,
+    includeExt,
+    excludeExt,
+    excludeDir,
+    depth,
+    copy,
+    copyFlat,
   } = config;
+
+  const targetStats = lstatSync(targetPath);
+  const baseDirForCopy = targetStats.isDirectory() ? targetPath : dirname(targetPath);
+  const timedDir = copy ? join(baseDirForCopy, '_c') : null;
 
   let metadataMap;
   let allFilesWithoutTimestamps; // Store to avoid re-scanning
+
+  const discoveryOptions = {
+    includeExt,
+    excludeExt,
+    excludeDir,
+    depth,
+  };
 
   // If cached metadata provided, use it directly
   if (cachedMetadata) {
     metadataMap = cachedMetadata;
     // Still need to get the list for skipped files calculation
-    allFilesWithoutTimestamps = discoverFilesWithoutTimestamps(targetPath);
+    allFilesWithoutTimestamps = discoverFilesWithoutTimestamps(targetPath, discoveryOptions);
   } else {
     // Step 1: Find all files without timestamps
-    allFilesWithoutTimestamps = discoverFilesWithoutTimestamps(targetPath);
+    allFilesWithoutTimestamps = discoverFilesWithoutTimestamps(targetPath, discoveryOptions);
 
     if (allFilesWithoutTimestamps.length === 0) {
       return {
@@ -1166,7 +1293,22 @@ export async function renameUsingMetadata(targetPath, options = {}) {
     const name = basename(filePath);
     const datePrefix = formatMetadataDate(metadata, format, timeShiftMs);
     const newName = `${datePrefix} ${name}`;
-    const newPath = join(dirname(filePath), newName);
+
+    let destinationDir = dirname(filePath);
+    if (copy) {
+      const relativeDir = relative(baseDirForCopy, destinationDir);
+      const normalizedRelative = (!relativeDir || relativeDir === '.' || relativeDir.startsWith('..'))
+        ? ''
+        : relativeDir;
+
+      if (copyFlat || !normalizedRelative) {
+        destinationDir = timedDir;
+      } else {
+        destinationDir = join(timedDir, normalizedRelative);
+      }
+    }
+
+    const newPath = join(destinationDir, newName);
 
     const result = {
       oldName: name,
@@ -1183,6 +1325,12 @@ export async function renameUsingMetadata(targetPath, options = {}) {
         // Check if target already exists
         if (existsSync(newPath)) {
           result.error = 'Target already exists';
+        } else if (copy) {
+          mkdirSync(dirname(newPath), { recursive: true });
+          copyFileSync(filePath, newPath);
+          const srcStats = statSync(filePath);
+          utimesSync(newPath, srcStats.atime, srcStats.mtime);
+          result.success = true;
         } else {
           renamePreservingTimestamps(filePath, newPath);
           result.success = true;

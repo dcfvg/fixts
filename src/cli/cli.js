@@ -510,6 +510,10 @@ async function interactiveWorkflow(targetPath, options) {
       dryRun: true,
       execute: false,
       timeShiftMs: options.timeShift,
+      includeExt: options.includeExt,
+      excludeExt: options.excludeExt,
+      excludeDir: options.excludeDir,
+      depth: options.depth,
     });
     metadataResults = metadataRenameResult.results || [];
     _metadataSkipped = metadataRenameResult.skippedNoMetadata || [];
@@ -619,6 +623,10 @@ async function interactiveWorkflow(targetPath, options) {
       execute: true,
       timeShiftMs: options.timeShift,
       copy: options.copy,
+      includeExt: options.includeExt,
+      excludeExt: options.excludeExt,
+      excludeDir: options.excludeDir,
+      depth: options.depth,
     });
 
     const successful = metadataRenameResult.results.filter(r => !r.error).length;
@@ -654,6 +662,7 @@ async function main() {
     depth: 1,
     includeExt: [],
     excludeExt: [],
+    excludeDir: [],
   };
 
   const options = mergeConfig(defaults, configFile, cliArgs);
@@ -842,6 +851,10 @@ async function main() {
           timeShiftMs: options.timeShift,
           preview: options.table,
           interactive: options.wizard !== false,
+          includeExt: options.includeExt,
+          excludeExt: options.excludeExt,
+          excludeDir: options.excludeDir,
+          depth: options.depth,
         });
 
         if (result.declined) {
@@ -858,6 +871,10 @@ async function main() {
           timeShiftMs: options.timeShift,
           preview: options.dryRun || options.table,
           interactive: options.wizard !== false,
+          includeExt: options.includeExt,
+          excludeExt: options.excludeExt,
+          excludeDir: options.excludeDir,
+          depth: options.depth,
         });
 
         process.exit(result.success ? 0 : 1);
@@ -882,6 +899,10 @@ async function main() {
             timeShiftMs: options.timeShift,
             preview: options.dryRun || options.table,
             interactive: options.wizard !== false,
+            includeExt: options.includeExt,
+            excludeExt: options.excludeExt,
+            excludeDir: options.excludeDir,
+            depth: options.depth,
           });
 
           process.exit(result.success ? 0 : 1);

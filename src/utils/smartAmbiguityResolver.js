@@ -221,7 +221,7 @@ export function batchAnalyzeAmbiguousFiles(files, autoResolveThreshold = 80) {
 
     // Auto-resolve if confidence is high enough
     if (smart.resolution && confidence >= autoResolveThreshold) {
-      autoResolved.set(file.name, smart.resolution);
+      autoResolved.set(file.path, smart.resolution);
       stats.autoResolved++;
     } else {
       needsPrompt.push({

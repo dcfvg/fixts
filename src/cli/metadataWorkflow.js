@@ -44,6 +44,10 @@ export async function executeMetadataWorkflow(targetPath, options = {}) {
     preview = false,
     interactive = true,
     onProgress = null,
+    includeExt = [],
+    excludeExt = [],
+    excludeDir = [],
+    depth = 1,
   } = options;
 
   console.log('\n🔍 Scanning file metadata...\n');
@@ -61,6 +65,10 @@ export async function executeMetadataWorkflow(targetPath, options = {}) {
         process.stdout.write('\n');
       }
     }),
+    includeExt,
+    excludeExt,
+    excludeDir,
+    depth,
   });
 
   const { results: metadataResults, filesScanned, datesFound, metadataMap, skippedNoMetadata } = scanResult;
@@ -174,6 +182,10 @@ export async function executeMetadataWorkflow(targetPath, options = {}) {
         process.stdout.write('\n');
       }
     }),
+    includeExt,
+    excludeExt,
+    excludeDir,
+    depth,
   });
 
   const applyResults = applyResult.results;
@@ -213,6 +225,10 @@ export async function promptMetadataFallback(targetPath, options = {}) {
     timeShiftMs = null,
     preview = false,
     interactive = true,
+    includeExt = [],
+    excludeExt = [],
+    excludeDir = [],
+    depth = 1,
   } = options;
 
   if (!interactive) {
@@ -240,5 +256,9 @@ export async function promptMetadataFallback(targetPath, options = {}) {
     timeShiftMs,
     preview,
     interactive,
+    includeExt,
+    excludeExt,
+    excludeDir,
+    depth,
   });
 }
