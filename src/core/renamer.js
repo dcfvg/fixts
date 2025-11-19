@@ -620,7 +620,7 @@ async function findItemsWithTimestamps(dirPath, format = 'yyyy-mm-dd hh.MM.ss', 
 async function discoverItems(targetPath, format = 'yyyy-mm-dd hh.MM.ss', parsingOptions = {}, includeExt = [], excludeExt = [], excludeDir = [], maxDepth = 1) {
   const stats = lstatSync(targetPath);
   if (stats.isSymbolicLink()) {
-    throw new Error(`Symbolic links are not supported: ${targetPath}`);
+    return { toRename: [], alreadyFormatted: [], withoutTimestamp: [] };
   }
 
   if (stats.isDirectory()) {
@@ -1016,7 +1016,7 @@ export async function rename(targetPath, options = {}) {
 
   // Create revert script if any files were successfully renamed (and not dry-run)
   let revertScriptPath = null;
-  if (!dryRun && execute && !noRevert && results.some(r => r.success && !r.error)) {
+  if (!copy && !dryRun && execute && !noRevert && results.some(r => r.success && !r.error)) {
     try {
       revertScriptPath = createRevertScript(results, stats.isDirectory() ? targetPath : dirname(targetPath));
     } catch (error) {

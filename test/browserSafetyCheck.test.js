@@ -28,6 +28,9 @@ const NODEJS_IMPORTS = [
 
 /**
  * Recursively find all JavaScript files in a directory
+ * @param {string} dir - Directory to search
+ * @param {string[]} files - Accumulator array for file paths
+ * @returns {string[]} Array of JavaScript file paths
  */
 function findJavaScriptFiles(dir, files = []) {
   const entries = readdirSync(dir);
@@ -48,6 +51,8 @@ function findJavaScriptFiles(dir, files = []) {
 
 /**
  * Check if a file is marked as browser-safe
+ * @param {string} filePath - Path to file to check
+ * @returns {boolean} True if file is marked browser-safe
  */
 function isBrowserSafe(filePath) {
   const content = readFileSync(filePath, 'utf-8');
@@ -58,6 +63,8 @@ function isBrowserSafe(filePath) {
 
 /**
  * Check if file contains Node.js imports
+ * @param {string} filePath - Path to file to check
+ * @returns {boolean} True if file contains Node.js imports
  */
 function hasNodeJsImports(filePath) {
   const content = readFileSync(filePath, 'utf-8');

@@ -1,6 +1,6 @@
 /* Browser-safe module ✓ */
 /**
- * @fileoverview Tests for Phase 2 advanced batch processing controls
+ * @file Tests for Phase 2 advanced batch processing controls
  * - Pause/Resume functionality
  * - Abort signal support
  * - Priority queue processing

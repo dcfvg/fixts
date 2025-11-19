@@ -2,9 +2,9 @@
 /**
  * @module metadataWorkflow
  * @browserSafe false
- * @requires ../core/renamer
- * @requires ./prompts
  * @description CLI workflow for metadata-based renaming
+ * @see module:renamer
+ * @see module:prompts
  */
 
 import { renameUsingMetadata } from '../core/renamer.js';

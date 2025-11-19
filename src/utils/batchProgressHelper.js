@@ -46,7 +46,7 @@ export class PauseToken {
 
   /**
    * Check if processing is paused
-   * @returns {boolean}
+   * @returns {boolean} True if currently paused
    */
   isPaused() {
     return this._paused;
@@ -68,8 +68,8 @@ export class PauseToken {
  */
 export class AbortError extends Error {
   /**
-   *
-   * @param message
+   * Create an abort error
+   * @param {string} message - Error message
    */
   constructor(message = 'Operation aborted') {
     super(message);
@@ -110,7 +110,7 @@ export function getOptimalChunkSize(fileCount, isBrowser = typeof window !== 'un
 export class BatchProgressTracker {
   /**
    * @param {number} total - Total items to process
-   * @param {Function} onProgress - Progress callback
+   * @param {(progress: object) => void} onProgress - Progress callback
    */
   constructor(total, onProgress) {
     this.total = total;
@@ -125,8 +125,8 @@ export class BatchProgressTracker {
   /**
    * Report progress for completed items
    * @param {number} count - Number of items completed in this update
-   * @param {*} currentItem - Current item being processed (optional)
-   * @param {*} result - Result of current item (optional)
+   * @param {object|null} currentItem - Current item being processed (optional)
+   * @param {object|null} result - Result of current item (optional)
    */
   report(count = 1, currentItem = null, result = null) {
     this.completed += count;
@@ -209,15 +209,15 @@ export function yieldToEventLoop() {
  * Process items in chunks with progress reporting
  * @template T, R
  * @param {T[]} items - Items to process
- * @param {Function} processItem - Function to process each item: (item) => Promise<R>
+ * @param {(item: T) => Promise<R>} processItem - Function to process each item
  * @param {object} options - Processing options
  * @param {number|'auto'} options.chunkSize - Chunk size or 'auto' for automatic
- * @param {Function} options.onProgress - Progress callback
- * @param {Function} options.onItemProcessed - Callback invoked after each item is processed: (item, result, index) => void
+ * @param {(progress: object) => void} options.onProgress - Progress callback
+ * @param {(item: T, result: R, index: number) => void} options.onItemProcessed - Callback invoked after each item is processed
  * @param {boolean} options.yieldBetweenChunks - Yield to event loop between chunks (default: true)
  * @param {PauseToken} options.pauseToken - Token to pause/resume processing
  * @param {AbortSignal} options.abortSignal - Signal to abort processing
- * @param {Function} options.priorityFn - Function to determine processing priority: (item) => number (higher = first)
+ * @param {(item: T) => number} options.priorityFn - Function to determine processing priority: (item) => number (higher = first)
  * @param {'fail-fast'|'collect'|'ignore'} options.errorMode - How to handle errors (default: 'fail-fast')
  * @returns {Promise<{results: R[], errors: Array<{item: T, error: Error}>}>} - Results and errors
  */

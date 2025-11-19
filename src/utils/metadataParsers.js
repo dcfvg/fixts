@@ -46,8 +46,9 @@ export function parseEXIFSegment(dataView) {
 
 /**
  * Internal EXIF parser
- * @param dataView
- * @param offset
+ * @param {DataView} dataView - DataView of JPEG data
+ * @param {number} offset - Offset to start parsing
+ * @returns {object|null} Extracted datetime or null
  */
 function parseEXIFSegmentInternal(dataView, offset) {
   try {
@@ -126,10 +127,10 @@ function parseEXIFSegmentInternal(dataView, offset) {
 
 /**
  * Parse a single IFD (Image File Directory) and extract datetime tags
- * @param dataView
- * @param ifdStart
- * @param littleEndian
- * @param baseOffset
+ * @param {DataView} dataView - DataView of EXIF data
+ * @param {number} ifdStart - Start offset of IFD
+ * @param {boolean} littleEndian - Byte order flag
+ * @param {number} baseOffset - Base offset for calculating pointers
  * @returns {object} - Object with dateTimeOriginal, dateTimeDigitized, dateTime properties
  */
 function parseIFDForDates(dataView, ifdStart, littleEndian, baseOffset) {
@@ -169,9 +170,10 @@ function parseIFDForDates(dataView, ifdStart, littleEndian, baseOffset) {
 
 /**
  * Read ASCII string from DataView
- * @param dataView
- * @param offset
- * @param length
+ * @param {DataView} dataView - DataView to read from
+ * @param {number} offset - Offset to start reading
+ * @param {number} length - Number of bytes to read
+ * @returns {string} Extracted ASCII string
  */
 function readASCIIString(dataView, offset, length) {
   let str = '';

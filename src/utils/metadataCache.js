@@ -2,8 +2,7 @@
 /**
  * @module metadataCache
  * @browserSafe false
- * @requires node:fs
- * @description Metadata caching system for fixTS
+ * @description Metadata caching system for fixTS - Node.js only module
  *
  * Provides intelligent caching of extracted metadata to avoid re-reading files
  * when only the priority order changes. Cache automatically invalidates when
@@ -150,12 +149,7 @@ export class MetadataCache {
 
   /**
    * Get cache statistics
-   * @returns {object} Statistics object
-   * @returns {number} return.hits - Number of cache hits
-   * @returns {number} return.misses - Number of cache misses
-   * @returns {number} return.evictions - Number of evicted entries
-   * @returns {number} return.size - Current cache size
-   * @returns {number} return.hitRate - Cache hit rate (0-1)
+   * @returns {object} Statistics object with hits, misses, evictions, size, and hitRate properties
    * @example
    * const stats = cache.getStats();
    * console.log(`Hit rate: ${(stats.hitRate * 100).toFixed(1)}%`);

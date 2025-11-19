@@ -1,5 +1,5 @@
 /**
- * @fileoverview Tests for confidence scores in heuristic detection
+ * @file Tests for confidence scores in heuristic detection
  * Verifies that confidence scores are properly exposed in the API
  */
 

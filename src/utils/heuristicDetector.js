@@ -97,7 +97,8 @@ const MONTHS_ABBR = {
 /**
  * Precompute blacklist ranges (GUIDs, hex IDs, versions, resolutions/bitrates, backup markers)
  * These ranges are skipped or penalized to reduce false positives
- * @param filename
+ * @param {string} filename - Filename to analyze
+ * @returns {Array<{start: number, end: number}>} Array of blacklisted character ranges
  */
 function detectBlacklistedRanges(filename) {
   const ranges = [];
@@ -129,9 +130,10 @@ function detectBlacklistedRanges(filename) {
 }
 
 /**
- *
- * @param ranges
- * @param seq
+ * Check if a sequence falls within blacklisted ranges
+ * @param {Array<{start: number, end: number}>} ranges - Array of blacklisted ranges
+ * @param {{start: number, end: number}} seq - Sequence to check
+ * @returns {boolean} True if sequence is in a blacklisted range
  */
 function isInBlacklistedRange(ranges, seq) {
   return ranges.some((range) => seq.start >= range.start && seq.end <= range.end);
@@ -140,7 +142,8 @@ function isInBlacklistedRange(ranges, seq) {
 /**
  * Extract all digit sequences from filename
  * Returns array of {value, start, end, digits}
- * @param filename
+ * @param {string} filename - Filename to analyze
+ * @returns {Array<{value: string, start: number, end: number, digits: number}>} Array of digit sequences
  */
 export function extractDigitSequences(filename) {
   const sequences = [];
@@ -291,9 +294,10 @@ const DEFAULT_EPOCH_YEAR_RANGE = {
 };
 
 /**
- *
- * @param date
- * @param epochRange
+ * Check if date is within acceptable epoch year range
+ * @param {Date} date - Date to check
+ * @param {{min: number, max: number}} epochRange - Allowed year range
+ * @returns {boolean} True if date is within range
  */
 function isDateWithinEpochRange(date, epochRange = DEFAULT_EPOCH_YEAR_RANGE) {
   if (!date || Number.isNaN(date.getTime())) return false;
@@ -670,11 +674,11 @@ function detectFrenchTime(filename) {
  *  - 2024-03-15T12:30:45.123Z
  *  - 2024-03-15T12.30.45Z
  *  - 20240315 123045+0200
- * @param {string} filename
- * @param {object} options
- * @param {boolean} options.debug
- * @param {object} options.epochRange
- * @returns {Array<object>}
+ * @param {string} filename - Filename to analyze
+ * @param {object} options - Detection options
+ * @param {boolean} options.debug - Enable debug logging
+ * @param {object} options.epochRange - Allowed year range for validation
+ * @returns {Array<object>} Array of detected ISO-like datetime matches
  */
 function detectIsoLikeDateTimes(filename, { debug = false, epochRange: _epochRange = DEFAULT_EPOCH_YEAR_RANGE } = {}) {
   const matches = [];
@@ -736,9 +740,10 @@ function detectIsoLikeDateTimes(filename, { debug = false, epochRange: _epochRan
 /**
  * Detect dates with month names/abbreviations (English)
  * Examples: 15-Mar-2024, Mar_15_2024
- * @param {string} filename
- * @param {object} options
- * @param {boolean} options.debug
+ * @param {string} filename - Filename to analyze
+ * @param {object} options - Detection options
+ * @param {boolean} options.debug - Enable debug logging
+ * @returns {Array<object>} Array of detected month name dates
  */
 function detectMonthNameDates(filename, { debug = false } = {}) {
   const results = [];
@@ -795,7 +800,8 @@ function detectMonthNameDates(filename, { debug = false } = {}) {
 /**
  * Infer date format preference from filename context (very lightweight heuristic)
  * Returns 'mdy' or 'dmy'
- * @param filename
+ * @param {string} filename - Filename to analyze
+ * @returns {string} Either 'mdy' or 'dmy'
  */
 function inferDateFormatPreference(filename) {
   const lower = filename.toLowerCase();
@@ -1081,7 +1087,7 @@ function analyzeSeparatedComponents(sequences, filename, { dateFormat = 'dmy', l
 
 /**
  * Parse timezone offsets like Z, UTC, +0200, -05:00
- * @param {string} tzString
+ * @param {string} tzString - Timezone string to parse
  * @returns {number|null} offset in minutes or null if invalid
  */
 function parseTimezoneOffset(tzString) {
@@ -1102,9 +1108,9 @@ function parseTimezoneOffset(tzString) {
 
 /**
  * Detect timezone token immediately following a timestamp
- * @param {string} filename
+ * @param {string} filename - Filename to analyze
  * @param {number} index - Position to start searching (typically end of time component)
- * @returns {object | null}
+ * @returns {object|null} Timezone object with utcOffsetMinutes or null if not found
  */
 function detectTimezoneAt(filename, index) {
   const tail = filename.slice(index);
@@ -1194,8 +1200,9 @@ function combineDateTimeComponents(components, filename) {
 /**
  * Main heuristic detection function
  * Returns array of detected timestamps with their positions
- * @param filename
- * @param options
+ * @param {string} filename - Filename to analyze for timestamps
+ * @param {object} options - Detection options including dateFormat, debug, epochRange
+ * @returns {Array<object>} Array of all detected timestamp objects with metadata
  */
 export function detectTimestampHeuristic(filename, options = {}) {
   const {
@@ -1509,8 +1516,9 @@ function calculateConfidence(timestamp, filename) {
 
 /**
  * Get the best (most precise) timestamp from filename
- * @param filename
- * @param options
+ * @param {string} filename - Filename to analyze
+ * @param {object} options - Detection options (dateFormat, debug, etc.)
+ * @returns {object|null} Best timestamp object or null if none found
  */
 export function getBestTimestamp(filename, options = {}) {
   const {
@@ -1681,7 +1689,8 @@ export function getBestTimestamp(filename, options = {}) {
 
 /**
  * Format timestamp as ISO string
- * @param timestamp
+ * @param {object} timestamp - Timestamp object with date components
+ * @returns {string} ISO formatted datetime string
  */
 export function formatTimestamp(timestamp) {
   if (!timestamp) return null;
@@ -1717,7 +1726,7 @@ export function formatTimestamp(timestamp) {
  * @param {object} timestamp - Parsed timestamp object
  * @param {object} options - Conversion options
  * @param {boolean} options.allowTimeOnly - Allow time-only patterns (uses current date)
- * @returns {Date|null}
+ * @returns {Date|null} Date object or null if conversion failed
  */
 export function timestampToDate(timestamp, options = {}) {
   if (!timestamp) return null;

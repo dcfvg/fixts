@@ -49,7 +49,7 @@ function shouldLog(level) {
  * Format log message
  * @param {string} level - Log level
  * @param {string} message - Message to log
- * @param {*} context - Optional context data
+ * @param {string|number|boolean|object|Error|null|undefined} context - Optional context data
  * @returns {string} - Formatted message
  */
 function formatMessage(level, message, context) {
@@ -88,7 +88,7 @@ const logger = {
   /**
    * Log error message
    * @param {string} message - Error message
-   * @param {*} context - Optional context
+   * @param {string|number|boolean|object|Error|null|undefined} context - Optional context
    */
   error(message, context) {
     if (shouldLog(LogLevel.ERROR)) {
@@ -99,7 +99,7 @@ const logger = {
   /**
    * Log warning message
    * @param {string} message - Warning message
-   * @param {*} context - Optional context
+   * @param {string|number|boolean|object|Error|null|undefined} context - Optional context
    */
   warn(message, context) {
     if (shouldLog(LogLevel.WARN)) {
@@ -110,7 +110,7 @@ const logger = {
   /**
    * Log info message
    * @param {string} message - Info message
-   * @param {*} context - Optional context
+   * @param {string|number|boolean|object|Error|null|undefined} context - Optional context
    */
   info(message, context) {
     if (shouldLog(LogLevel.INFO)) {
@@ -121,7 +121,7 @@ const logger = {
   /**
    * Log debug message
    * @param {string} message - Debug message
-   * @param {*} context - Optional context
+   * @param {string|number|boolean|object|Error|null|undefined} context - Optional context
    */
   debug(message, context) {
     if (shouldLog(LogLevel.DEBUG)) {

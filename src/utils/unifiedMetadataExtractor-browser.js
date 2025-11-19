@@ -133,8 +133,9 @@ export async function extractTimestamp(filepath, options = {}) {
 
 /**
  * Extract timestamp from filename
- * @param basename
- * @param options
+ * @param {string} basename - File basename to parse
+ * @param {object} options - Parsing options
+ * @returns {Promise<object|null>} Timestamp result or null
  * @private
  */
 async function extractFromFilename(basename, options) {
@@ -158,8 +159,9 @@ async function extractFromFilename(basename, options) {
 
 /**
  * Extract timestamp from EXIF data
- * @param filepath
- * @param isFileObject
+ * @param {string|File} filepath - File path or File object
+ * @param {boolean} isFileObject - True if filepath is a File object
+ * @returns {Promise<object|null>} Timestamp result or null
  * @private
  */
 async function extractFromEXIF(filepath, isFileObject) {
@@ -184,8 +186,9 @@ async function extractFromEXIF(filepath, isFileObject) {
 
 /**
  * Extract timestamp from audio metadata
- * @param filepath
- * @param isFileObject
+ * @param {string|File} filepath - File path or File object
+ * @param {boolean} isFileObject - True if filepath is a File object
+ * @returns {Promise<object|null>} Timestamp result or null
  * @private
  */
 async function extractFromAudio(filepath, isFileObject) {
@@ -210,7 +213,8 @@ async function extractFromAudio(filepath, isFileObject) {
 
 /**
  * Check if file extension is an image format
- * @param ext
+ * @param {string} ext - File extension (with or without dot)
+ * @returns {boolean} True if image extension
  * @private
  */
 function isImageFile(ext) {
@@ -220,7 +224,8 @@ function isImageFile(ext) {
 
 /**
  * Check if file extension is an audio format
- * @param ext
+ * @param {string} ext - File extension (with or without dot)
+ * @returns {boolean} True if audio extension
  * @private
  */
 function isAudioFile(ext) {
@@ -233,11 +238,11 @@ function isAudioFile(ext) {
  * @param {Array<string|File>} filepaths - Array of file paths or File objects
  * @param {object} options - Extraction options (same as extractTimestamp)
  * @param {number|'auto'} options.chunkSize - Process N files at a time, or 'auto' for optimal size (default: 'auto')
- * @param {Function} options.onProgress - Progress callback: ({completed, total, percentage, elapsedMs, estimatedRemainingMs, filesPerSecond}) => void
+ * @param {(progress: {completed: number, total: number, percentage: number, elapsedMs: number, estimatedRemainingMs: number, filesPerSecond: number}) => void} options.onProgress - Progress callback
  * @param {boolean} options.yieldBetweenChunks - Yield to event loop between chunks for UI responsiveness (default: true)
  * @param {import('./batchProgressHelper.js').PauseToken} options.pauseToken - Token to pause/resume processing
  * @param {AbortSignal} options.abortSignal - Signal to abort processing
- * @param {Function} options.priorityFn - Function to determine processing priority: (filepath) => number (higher = first)
+ * @param {(filepath: string|File) => number} options.priorityFn - Function to determine processing priority: (filepath) => number (higher = first)
  * @param {'fail-fast'|'collect'|'ignore'} options.errorMode - How to handle errors (default: 'collect')
  * @returns {Promise<Array>} - Array of extraction results
  */

@@ -23,12 +23,12 @@ import { processInChunks } from './batchProgressHelper.js';
  * @param {boolean} options.allowTimeOnly - Allow time-only formats
  * @param {boolean} options.includeConfidence - Include confidence scores (default: true)
  * @param {number|'auto'} options.chunkSize - Process N files at a time, or 'auto' for optimal size (default: 'auto')
- * @param {Function} options.onProgress - Progress callback: ({completed, total, percentage, elapsedMs, estimatedRemainingMs, filesPerSecond}) => void
- * @param {Function} options.onItemProcessed - Per-item callback: (filename, result, index) => void
+ * @param {(progress: {completed: number, total: number, percentage: number, elapsedMs: number, estimatedRemainingMs: number, filesPerSecond: number}) => void} options.onProgress - Progress callback
+ * @param {(filename: string, result: object, index: number) => void} options.onItemProcessed - Per-item callback
  * @param {boolean} options.yieldBetweenChunks - Yield to event loop between chunks (default: true in browser, false in Node.js)
  * @param {import('./batchProgressHelper.js').PauseToken} options.pauseToken - Token to pause/resume processing
  * @param {AbortSignal} options.abortSignal - Signal to abort processing
- * @param {Function} options.priorityFn - Function to determine processing priority: (filename) => number (higher = first)
+ * @param {(filename: string) => number} options.priorityFn - Function to determine processing priority: (filename) => number (higher = first)
  * @param {'fail-fast'|'collect'|'ignore'} options.errorMode - How to handle errors (default: 'collect')
  * @returns {Promise<Array<object>>} - Array of results with {filename, timestamp, date, confidence}
  */

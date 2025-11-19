@@ -10,6 +10,8 @@ import { generateNewName } from '../../src/core/formatter.js';
 
 /**
  * Format date to YYYY-MM-DD using LOCAL timezone (not UTC)
+ * @param {Date} date - Date object to format
+ * @returns {string} Formatted date string (YYYY-MM-DD)
  */
 function formatLocalDate(date) {
   const year = date.getFullYear();

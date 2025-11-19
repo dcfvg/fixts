@@ -2,10 +2,7 @@
 /**
  * @module unifiedMetadataExtractor
  * @browserSafe false
- * @requires node:fs
- * @requires node:path
- * @requires node:url
- * @description Unified Metadata Extractor
+ * @description Unified Metadata Extractor - Node.js only module
  *
  * Provides a single, consistent interface for extracting timestamps from multiple sources:
  * - Filename patterns
@@ -94,7 +91,7 @@ function selectByPriority(allSources, priority, includeAll) {
  * @param {boolean} options.includeConfidence - Include confidence scores (default: true)
  * @param {boolean} options.useCache - Use metadata cache (default: true)
  * @param {boolean} options.cacheResults - Store results in cache (default: true)
- * @param {Function} options.onCacheHit - Callback when cache hit: (filepath, cached) => void
+ * @param {(filepath: string, cached: object) => void} options.onCacheHit - Callback when cache hit
  * @param {object} options.parsingOptions - Options for filename parsing (dateFormat, allowTimeOnly, etc.)
  * @returns {object | null} - Extraction result or null if no timestamp found
  * @example
@@ -242,8 +239,9 @@ export async function extractTimestamp(filepath, options = {}) {
 
 /**
  * Extract timestamp from filename
- * @param basename
- * @param options
+ * @param {string} basename - File basename to parse
+ * @param {object} options - Parsing options
+ * @returns {object|null} Timestamp object or null
  * @private
  */
 async function extractFromFilename(basename, options) {
@@ -273,7 +271,8 @@ async function extractFromFilename(basename, options) {
 
 /**
  * Extract timestamp from EXIF data
- * @param filepath
+ * @param {string} filepath - Path to image file
+ * @returns {object|null} Timestamp object or null
  * @private
  */
 async function extractFromEXIF(filepath) {
@@ -293,7 +292,8 @@ async function extractFromEXIF(filepath) {
 
 /**
  * Extract timestamp from audio metadata
- * @param filepath
+ * @param {string} filepath - Path to audio file
+ * @returns {object|null} Timestamp object or null
  * @private
  */
 async function extractFromAudio(filepath) {
@@ -313,7 +313,8 @@ async function extractFromAudio(filepath) {
 
 /**
  * Extract timestamp from file birthtime (creation time)
- * @param filepath
+ * @param {string} filepath - Path to file
+ * @returns {object|null} Timestamp object or null
  * @private
  */
 async function extractFromBirthtime(filepath) {
@@ -337,7 +338,8 @@ async function extractFromBirthtime(filepath) {
 
 /**
  * Extract timestamp from file mtime (modification time)
- * @param filepath
+ * @param {string} filepath - Path to file
+ * @returns {object|null} Timestamp object or null
  * @private
  */
 async function extractFromMtime(filepath) {
@@ -361,7 +363,8 @@ async function extractFromMtime(filepath) {
 
 /**
  * Check if file extension is an image format
- * @param ext
+ * @param {string} ext - File extension (with or without dot)
+ * @returns {boolean} True if image extension
  * @private
  */
 function isImageFile(ext) {
@@ -371,7 +374,8 @@ function isImageFile(ext) {
 
 /**
  * Check if file extension is an audio format
- * @param ext
+ * @param {string} ext - File extension (with or without dot)
+ * @returns {boolean} True if audio extension
  * @private
  */
 function isAudioFile(ext) {
@@ -384,11 +388,11 @@ function isAudioFile(ext) {
  * @param {string[]} filepaths - Array of file paths
  * @param {object} options - Extraction options (same as extractTimestamp)
  * @param {number|'auto'} options.chunkSize - Process N files at a time, or 'auto' for optimal size (default: 'auto')
- * @param {Function} options.onProgress - Progress callback: ({completed, total, percentage, elapsedMs, estimatedRemainingMs, filesPerSecond}) => void
+ * @param {(progress: {completed: number, total: number, percentage: number, elapsedMs: number, estimatedRemainingMs: number, filesPerSecond: number}) => void} options.onProgress - Progress callback
  * @param {boolean} options.yieldBetweenChunks - Yield to event loop between chunks (default: false in Node.js)
  * @param {import('./batchProgressHelper.js').PauseToken} options.pauseToken - Token to pause/resume processing
  * @param {AbortSignal} options.abortSignal - Signal to abort processing
- * @param {Function} options.priorityFn - Function to determine processing priority: (filepath) => number (higher = first)
+ * @param {(filepath: string) => number} options.priorityFn - Function to determine processing priority: (filepath) => number (higher = first)
  * @param {'fail-fast'|'collect'|'ignore'} options.errorMode - How to handle errors (default: 'collect')
  * @returns {Promise<Array>} - Array of {filepath, result} objects
  * @example
@@ -710,11 +714,7 @@ export function clearMetadataCache(filepath = null) {
  *
  * Returns current cache performance metrics. Useful for monitoring
  * and optimization.
- * @returns {object} Cache statistics
- * @returns {number} return.hits - Number of cache hits
- * @returns {number} return.misses - Number of cache misses
- * @returns {number} return.size - Current number of cached entries
- * @returns {number} return.hitRate - Cache hit rate (0-1)
+ * @returns {object} Cache statistics with hits, misses, size, and hitRate properties
  * @example
  * const stats = getMetadataCacheStats();
  * console.log(`Cache size: ${stats.size} entries`);

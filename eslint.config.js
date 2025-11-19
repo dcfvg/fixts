@@ -73,7 +73,8 @@ export default [
       'fixts-webapp/**',
       'fixts-desktop/**',
       'fixts-desktop/dist-electron/**',
-      'docs/api/**'  // Auto-generated JSDoc files
+      'docs/api/**',  // Auto-generated JSDoc files
+      'docs/archive/**'  // Archived/old code
     ]
   }
 ];

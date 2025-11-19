@@ -7,8 +7,7 @@
  * Uses music-metadata for robust, well-tested audio metadata parsing across platforms
  * @module fileMetadataParser
  * @browserSafe false
- * @requires node:fs
- * @requires music-metadata
+ * @description Node.js-only module for parsing file metadata (EXIF, audio tags)
  */
 
 import ExifReader from 'exifreader';

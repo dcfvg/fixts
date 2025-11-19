@@ -14,6 +14,9 @@ import { rename, renameUsingMetadata } from '../src/core/renamer.js';
 
 const TEST_DIR = join(process.cwd(), 'test-temp-robustness');
 
+/**
+ * Reset test directory
+ */
 function resetTestDir() {
   if (existsSync(TEST_DIR)) {
     rmSync(TEST_DIR, { recursive: true, force: true });
