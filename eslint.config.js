@@ -40,6 +40,8 @@ export default [
       'sample/**',
       'test/local-sample/temp/**',
       'fixts-webapp/**',
+      'fixts-desktop/**',
+      'fixts-desktop/dist-electron/**',
       'docs/api/**'  // Auto-generated JSDoc files
     ]
   }

@@ -50,6 +50,87 @@ const _SEPARATORS = {
   T: 'T',
 };
 
+// Month abbreviations (English, can be extended if needed)
+const MONTHS_ABBR = {
+  jan: 1,
+  janv: 1,
+  january: 1,
+  janvier: 1,
+  feb: 2,
+  fev: 2,
+  fevr: 2,
+  febr: 2,
+  february: 2,
+  fevrier: 2,
+  mar: 3,
+  mars: 3,
+  march: 3,
+  apr: 4,
+  avril: 4,
+  april: 4,
+  may: 5,
+  jun: 6,
+  juin: 6,
+  junio: 6,
+  jul: 7,
+  juillet: 7,
+  julio: 7,
+  aug: 8,
+  aout: 8,
+  agosto: 8,
+  august: 8,
+  sep: 9,
+  sept: 9,
+  septembre: 9,
+  septiembre: 9,
+  oct: 10,
+  octobre: 10,
+  october: 10,
+  nov: 11,
+  novembre: 11,
+  november: 11,
+  dec: 12,
+  december: 12,
+  decembre: 12,
+};
+
+/**
+ * Precompute blacklist ranges (GUIDs, hex IDs, versions, resolutions/bitrates, backup markers)
+ * These ranges are skipped or penalized to reduce false positives
+ */
+function detectBlacklistedRanges(filename) {
+  const ranges = [];
+
+  const patterns = [
+    /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/g, // GUID
+    /\b[0-9a-fA-F]{32}\b/g, // long hex ids
+    /\b[0-9a-fA-F]{40}\b/g, // SHA1-like
+    /\b[0-9A-Za-z]{32,40}\b/g, // base36/base62 ids
+    /\bv?\d+\.\d+\.\d+(?:\.\d+)?\b/g, // version numbers
+    /\b\d{3,4}[pi]\b/gi, // 1080p, 1080i, 2160p
+    /\b[34]k\b/gi, // 4k, 3k
+    /\b\d{2,3}0kbps\b/gi, // 320kbps etc.
+    /\b2\.4ghz\b/gi,
+    /\bframe\d{3,}\b/gi, // frame counters
+    /\b(?:_final|_backup)\b/gi,
+    /\b(?:_v?final|_copy|draft)\b/gi,
+    /checksum/gi,
+  ];
+
+  for (const regex of patterns) {
+    let m;
+    while ((m = regex.exec(filename)) !== null) {
+      ranges.push({ start: m.index, end: m.index + m[0].length });
+    }
+  }
+
+  return ranges;
+}
+
+function isInBlacklistedRange(ranges, seq) {
+  return ranges.some((range) => seq.start >= range.start && seq.end <= range.end);
+}
+
 /**
  * Extract all digit sequences from filename
  * Returns array of {value, start, end, digits}
@@ -195,36 +276,67 @@ function tryCompactDate(seq) {
 }
 
 /**
- * Try to parse as Unix timestamp (10 digits, seconds since epoch)
+ * Epoch timestamp detection range (looser than before to reduce false negatives)
+ */
+const DEFAULT_EPOCH_YEAR_RANGE = {
+  min: 2015,
+  max: 2035,
+};
+
+function isDateWithinEpochRange(date, epochRange = DEFAULT_EPOCH_YEAR_RANGE) {
+  if (!date || Number.isNaN(date.getTime())) return false;
+  const year = date.getUTCFullYear();
+  return year >= epochRange.min && year <= epochRange.max;
+}
+
+/**
+ * Try to parse as Unix timestamp in seconds (10 digits), milliseconds (13 digits) or microseconds (16 digits)
  * @param {Object} seq - Digit sequence object from extractDigitSequences
+ * @param {Object} epochRange - Allowed UTC year window for epoch conversion
  * @returns {Object|null} - Parsed timestamp or null
  * @private
  */
-function tryUnixTimestamp(seq) {
-  if (seq.digits !== 10) return null;
+function tryUnixTimestamp(seq, epochRange = DEFAULT_EPOCH_YEAR_RANGE) {
+  if (![10, 13, 16].includes(seq.digits)) return null;
 
-  const timestamp = seq.numValue;
+  // 10 = seconds, 13 = ms, 16 = micro (convert to ms)
+  const raw = seq.numValue;
+  const isSafe = Number.isSafeInteger(raw);
+  if (!isSafe) return null;
 
-  // Unix timestamps for 2020-2030: ~1577836800 to ~1893456000
-  if (timestamp >= 1577836800 && timestamp <= 1893456000) {
-    const date = new Date(timestamp * 1000);
+  let epochMs = null;
+  let type = null;
 
-    return {
-      type: 'UNIX_TIMESTAMP',
-      year: date.getUTCFullYear(),
-      month: date.getUTCMonth() + 1,
-      day: date.getUTCDate(),
-      hour: date.getUTCHours(),
-      minute: date.getUTCMinutes(),
-      second: date.getUTCSeconds(),
-      precision: 'second',
-      start: seq.start,
-      end: seq.end,
-      unixTimestamp: timestamp,
-    };
+  if (seq.digits === 10) {
+    epochMs = raw * 1000;
+    type = 'UNIX_TIMESTAMP';
+  } else if (seq.digits === 13) {
+    epochMs = raw;
+    type = 'UNIX_MILLISECONDS';
+  } else if (seq.digits === 16) {
+    epochMs = Math.floor(raw / 1000); // microseconds to milliseconds
+    type = 'UNIX_MICROSECONDS';
   }
 
-  return null;
+  if (epochMs === null) return null;
+
+  const date = new Date(epochMs);
+  if (!isDateWithinEpochRange(date, epochRange)) return null;
+
+  return {
+    type,
+    year: date.getUTCFullYear(),
+    month: date.getUTCMonth() + 1,
+    day: date.getUTCDate(),
+    hour: date.getUTCHours(),
+    minute: date.getUTCMinutes(),
+    second: date.getUTCSeconds(),
+    precision: 'second',
+    start: seq.start,
+    end: seq.end,
+    unixTimestamp: Math.floor(epochMs / 1000),
+    unixMs: epochMs,
+  };
 }
 
 /**
@@ -401,6 +513,13 @@ function tryFourDigits(seq, filename) {
   if (seq.digits !== 4) return null;
 
   const str = seq.value;
+  const resolutionAfter = filename.slice(seq.end, Math.min(filename.length, seq.end + 6));
+  const resolutionBefore = filename.slice(Math.max(0, seq.start - 5), seq.start);
+  const looksLikeResolution = /^x\d{3,4}/i.test(resolutionAfter) || /\d{3,4}x$/i.test(resolutionBefore);
+
+  if (looksLikeResolution) {
+    return null;
+  }
 
   // Try as 4-digit year first (most common)
   if (validators.year4(seq.numValue)) {
@@ -439,6 +558,11 @@ function tryFourDigits(seq, filename) {
   const minute = parseInt(str.slice(2, 4), 10);
 
   if (validators.hour(hour) && validators.minute(minute)) {
+    const resolutionContext = filename.slice(seq.end, Math.min(filename.length, seq.end + 6));
+    if (/^p(?![a-z])/i.test(resolutionContext) || /^px/i.test(resolutionContext)) {
+      return null;
+    }
+
     return {
       type: 'COMPACT_TIME_HM',
       hour,
@@ -529,6 +653,159 @@ function detectFrenchTime(filename) {
 }
 
 /**
+ * Detect ISO-like datetimes with optional milliseconds and timezone
+ * Supports:
+ *  - 2024-03-15T12:30:45.123Z
+ *  - 2024-03-15T12.30.45Z
+ *  - 20240315 123045+0200
+ * @param {string} filename
+ * @param {Object} options
+ * @param {boolean} options.debug
+ * @param {Object} options.epochRange
+ * @returns {Array<Object>}
+ */
+function detectIsoLikeDateTimes(filename, { debug = false, epochRange: _epochRange = DEFAULT_EPOCH_YEAR_RANGE } = {}) {
+  const matches = [];
+
+  const isoRegex = /(\d{4})-(\d{2})-(\d{2})[T\s](\d{2})[:.](\d{2})[:.](\d{2})(?:[.,](\d{3}))?\s*(Z|UTC|[+-]\d{2}(?::?\d{2})?)?/gi;
+  const compactTzRegex = /(\d{4})(\d{2})(\d{2})[ T]?(\d{2})(\d{2})(\d{2})(?:[.,](\d{3}))?\s*(Z|UTC|[+-]\d{2}(?::?\d{2})?)/gi;
+
+  const processMatch = (match, groups, index) => {
+    const [year, month, day, hour, minute, second, milliRaw, tzRaw] = groups;
+    const yearNum = parseInt(year, 10);
+    const monthNum = parseInt(month, 10);
+    const dayNum = parseInt(day, 10);
+    const hourNum = parseInt(hour, 10);
+    const minuteNum = parseInt(minute, 10);
+    const secondNum = parseInt(second, 10);
+    const millisecond = milliRaw ? parseInt(milliRaw.replace(/[.,]/, ''), 10) : 0;
+
+    if (!(validators.year4(yearNum) && validators.month(monthNum) && validators.day(dayNum) &&
+      validators.hour(hourNum) && validators.minute(minuteNum) && validators.second(secondNum))) {
+      return;
+    }
+
+    const timezone = tzRaw ? tzRaw.toUpperCase() : undefined;
+    const utcOffsetMinutes = timezone ? parseTimezoneOffset(timezone) : undefined;
+
+    const start = index;
+    const end = index + match.length;
+
+    matches.push({
+      type: 'ISO_DATETIME',
+      year: yearNum,
+      month: monthNum,
+      day: dayNum,
+      hour: hourNum,
+      minute: minuteNum,
+      second: secondNum,
+      millisecond,
+      precision: millisecond ? 'millisecond' : 'second',
+      start,
+      end,
+      timezone,
+      utcOffsetMinutes,
+      trace: debug ? 'iso-like' : undefined,
+    });
+  };
+
+  let m;
+  while ((m = isoRegex.exec(filename)) !== null) {
+    processMatch(m[0], [m[1], m[2], m[3], m[4], m[5], m[6], m[7], m[8]], m.index);
+  }
+
+  while ((m = compactTzRegex.exec(filename)) !== null) {
+    processMatch(m[0], [m[1], m[2], m[3], m[4], m[5], m[6], m[7], m[8]], m.index);
+  }
+
+  return matches;
+}
+
+/**
+ * Detect dates with month names/abbreviations (English)
+ * Examples: 15-Mar-2024, Mar_15_2024
+ * @param {string} filename
+ * @param {Object} options
+ * @param {boolean} options.debug
+ */
+function detectMonthNameDates(filename, { debug = false } = {}) {
+  const results = [];
+  const monthAlternatives = Object.keys(MONTHS_ABBR).join('|');
+
+  const boundary = '(?:$|[^0-9A-Za-z])';
+  const timeOpt = '(?:\\s+(\\d{2})[:h\\.]?(\\d{2})(?:[:\\.]?(\\d{2}))?)?';
+  const dayFirst = new RegExp(`(\\d{1,2})[._\\-\\s](${monthAlternatives})[,_\\-\\s]*(\\d{4})${timeOpt}(?=${boundary})`, 'gi');
+  const monthFirst = new RegExp(`(${monthAlternatives})[._\\-\\s](\\d{1,2})[,_\\-\\s]*(\\d{4})${timeOpt}(?=${boundary})`, 'gi');
+
+  const process = (match, dayStr, monthStr, yearStr, timeParts, index) => {
+    const day = parseInt(dayStr, 10);
+    const month = MONTHS_ABBR[monthStr.toLowerCase().slice(0, 3)];
+    const year = parseInt(yearStr, 10);
+    const [hourStr, minStr, secStr] = timeParts || [];
+    const hour = hourStr ? parseInt(hourStr, 10) : undefined;
+    const minute = minStr ? parseInt(minStr, 10) : undefined;
+    const second = secStr ? parseInt(secStr, 10) : undefined;
+
+    const baseValid = validators.year4(year) && validators.month(month) && validators.day(day);
+    const timeValid = hour === undefined ||
+      (validators.hour(hour) && validators.minute(minute || 0) && (second === undefined || validators.second(second)));
+
+    if (baseValid && timeValid) {
+      results.push({
+        type: 'MONTH_NAME_DATE',
+        year,
+        month,
+        day,
+        hour: hour ?? undefined,
+        minute: minute ?? undefined,
+        second: second ?? undefined,
+        precision: hour !== undefined ? (second !== undefined ? 'second' : 'minute') : 'day',
+        start: index,
+        end: index + match.length,
+        separator: '-',
+        trace: debug ? 'month-name' : undefined,
+      });
+    }
+  };
+
+  let m;
+  while ((m = dayFirst.exec(filename)) !== null) {
+    process(m[0], m[1], m[2], m[3], [m[4], m[5], m[6]], m.index);
+  }
+
+  while ((m = monthFirst.exec(filename)) !== null) {
+    process(m[0], m[2], m[1], m[3], [m[4], m[5], m[6]], m.index);
+  }
+
+  return results;
+}
+
+/**
+ * Infer date format preference from filename context (very lightweight heuristic)
+ * Returns 'mdy' or 'dmy'
+ */
+function inferDateFormatPreference(filename) {
+  const lower = filename.toLowerCase();
+
+  let mdyScore = 0;
+  let dmyScore = 0;
+
+  // Locale hints
+  if (/(^|[_.-])(us|usa|america)([^a-z]|$)/.test(lower)) mdyScore += 2;
+  if (/(^|[_.-])(uk|eu|fr|de|es|it)([^a-z]|$)/.test(lower)) dmyScore += 2;
+
+  // Extension hints
+  if (/\.(us)\b/.test(lower)) mdyScore += 1;
+  if (/\.(uk)\b/.test(lower)) dmyScore += 1;
+
+  // Timezone hints: negative offsets more common US, positive EU/Asia (rough heuristic)
+  if (/[+-]0[0-5]:?\d{2}/.test(lower) || /-[0-9]{2}/.test(lower)) mdyScore += 1;
+  if (/\+0[1-3]:?\d{2}/.test(lower) || /\+0[4-9]:?\d{2}/.test(lower)) dmyScore += 1;
+
+  return mdyScore > dmyScore ? 'mdy' : 'dmy';
+}
+
+/**
  * Analyze sequence of 2-digit components with separators
  * Typical patterns:
  * - YYYY-MM-DD (4-2-2)
@@ -541,8 +818,9 @@ function detectFrenchTime(filename) {
  * @returns {Object|null} - Parsed timestamp components or null
  * @private
  */
-function analyzeSeparatedComponents(sequences, filename, dateFormat = 'dmy') {
+function analyzeSeparatedComponents(sequences, filename, { dateFormat = 'dmy', localePreference = 'dmy', debug = false } = {}) {
   const results = [];
+  const preferredFormat = dateFormat === 'auto' ? localePreference : dateFormat;
 
   for (let i = 0; i < sequences.length; i++) {
     const seq = sequences[i];
@@ -618,32 +896,33 @@ function analyzeSeparatedComponents(sequences, filename, dateFormat = 'dmy') {
             i += 2;
             continue;
           } else if (isValidEuropean && isValidUS) {
-            // Both valid - use dateFormat to decide
-            if (dateFormat === 'mdy') {
-              // US format: MM-DD-YYYY
-              results.push({
-                type: 'US_DATE',
-                year,
-                month: v1,
-                day: v2,
-                precision: 'day',
-                start: seq.start,
-                end: seq3.end,
-                separator: sep1,
-              });
-            } else {
-              // European format (default): DD-MM-YYYY
-              results.push({
-                type: 'EUROPEAN_DATE',
-                year,
-                month: v2,
-                day: v1,
-                precision: 'day',
-                start: seq.start,
-                end: seq3.end,
-                separator: sep1,
-              });
-            }
+            // Both valid - emit both and let preference/confidence decide
+            results.push({
+              type: 'US_DATE',
+              year,
+              month: v1,
+              day: v2,
+              precision: 'day',
+              start: seq.start,
+              end: seq3.end,
+              separator: sep1,
+              ambiguous: true,
+              preferenceBoost: preferredFormat === 'mdy' ? 0.4 : 0,
+              trace: debug ? 'ambiguous-us' : undefined,
+            });
+            results.push({
+              type: 'EUROPEAN_DATE',
+              year,
+              month: v2,
+              day: v1,
+              precision: 'day',
+              start: seq.start,
+              end: seq3.end,
+              separator: sep1,
+              ambiguous: true,
+              preferenceBoost: preferredFormat !== 'mdy' ? 0.4 : 0,
+              trace: debug ? 'ambiguous-eu' : undefined,
+            });
             i += 2;
             continue;
           }
@@ -788,6 +1067,51 @@ function analyzeSeparatedComponents(sequences, filename, dateFormat = 'dmy') {
 }
 
 /**
+ * Parse timezone offsets like Z, UTC, +0200, -05:00
+ * @param {string} tzString
+ * @returns {number|null} offset in minutes or null if invalid
+ */
+function parseTimezoneOffset(tzString) {
+  if (!tzString) return null;
+  if (/^z$/i.test(tzString) || /^utc$/i.test(tzString)) return 0;
+
+  const match = /^([+-])(\d{2})(?::?(\d{2}))?$/.exec(tzString);
+  if (!match) return null;
+
+  const sign = match[1] === '+' ? 1 : -1;
+  const hours = parseInt(match[2], 10);
+  const minutes = match[3] ? parseInt(match[3], 10) : 0;
+
+  if (hours > 14 || minutes > 59) return null; // Avoid wild offsets
+
+  return sign * (hours * 60 + minutes);
+}
+
+/**
+ * Detect timezone token immediately following a timestamp
+ * @param {string} filename
+ * @param {number} index - Position to start searching (typically end of time component)
+ * @returns {Object|null}
+ */
+function detectTimezoneAt(filename, index) {
+  const tail = filename.slice(index);
+  const match = /^[\sT_-]*(Z|UTC|[+-]\d{2}(?::?\d{2})?)/i.exec(tail);
+
+  if (!match) return null;
+
+  const timezone = match[1].toUpperCase();
+  const utcOffsetMinutes = parseTimezoneOffset(timezone);
+  if (utcOffsetMinutes === null || Number.isNaN(utcOffsetMinutes)) {
+    return null;
+  }
+  return {
+    timezone,
+    utcOffsetMinutes,
+    end: index + match[0].length,
+  };
+}
+
+/**
  * Combine date and time components that are adjacent
  * @param {Array<Object>} components - Parsed timestamp components
  * @param {string} filename - Filename for context
@@ -835,7 +1159,23 @@ function combineDateTimeComponents(components, filename) {
     combined.push(comp);
   }
 
-  return combined;
+  // Attach timezone info if present right after the component
+  return combined.map((comp) => {
+    const hasTime = comp.precision === 'second' || comp.precision === 'millisecond';
+    if (!hasTime) return comp;
+
+    const tz = detectTimezoneAt(filename, comp.end);
+    if (tz) {
+      return {
+        ...comp,
+        timezone: tz.timezone,
+        utcOffsetMinutes: tz.utcOffsetMinutes,
+        end: tz.end,
+      };
+    }
+
+    return comp;
+  });
 }
 
 /**
@@ -843,7 +1183,14 @@ function combineDateTimeComponents(components, filename) {
  * Returns array of detected timestamps with their positions
  */
 export function detectTimestampHeuristic(filename, options = {}) {
-  const { dateFormat = 'dmy' } = options;
+  const {
+    dateFormat = 'dmy',
+    debug = false,
+    epochRange = DEFAULT_EPOCH_YEAR_RANGE,
+  } = options;
+
+  const localePreference = inferDateFormatPreference(filename);
+  const effectiveDateFormat = dateFormat === 'auto' ? localePreference : dateFormat;
 
   // Extract all digit sequences
   const sequences = extractDigitSequences(filename);
@@ -854,6 +1201,7 @@ export function detectTimestampHeuristic(filename, options = {}) {
 
   const results = [];
   const processedRanges = []; // Track which sequences we've already processed
+  const blacklistRanges = detectBlacklistedRanges(filename);
 
   // Helper to check if a sequence was already processed
   const isProcessed = (seq) => {
@@ -862,7 +1210,20 @@ export function detectTimestampHeuristic(filename, options = {}) {
     );
   };
 
-  // First, detect French time format (HHhMMmSSs) which has letter separators
+  // First, detect month-name dates and ISO-like patterns (use letters/mixed separators)
+  const isoLike = detectIsoLikeDateTimes(filename, { debug, epochRange });
+  for (const comp of isoLike) {
+    results.push(comp);
+    processedRanges.push({ start: comp.start, end: comp.end });
+  }
+
+  const monthNames = detectMonthNameDates(filename, { debug });
+  for (const comp of monthNames) {
+    results.push(comp);
+    processedRanges.push({ start: comp.start, end: comp.end });
+  }
+
+  // Then, detect French time format (HHhMMmSSs) which has letter separators
   // This must be done before other analysis since it uses letters not digits
   const frenchTimes = detectFrenchTime(filename);
   for (const timeComp of frenchTimes) {
@@ -872,7 +1233,11 @@ export function detectTimestampHeuristic(filename, options = {}) {
 
   // Try separated formats first (multiple sequences with separators)
   // These are more reliable than single compact sequences
-  const separated = analyzeSeparatedComponents(sequences, filename, dateFormat);
+  const separated = analyzeSeparatedComponents(
+    sequences,
+    filename,
+    { dateFormat: effectiveDateFormat, localePreference, debug }
+  );
   for (const comp of separated) {
     results.push(comp);
     processedRanges.push({ start: comp.start, end: comp.end });
@@ -880,7 +1245,7 @@ export function detectTimestampHeuristic(filename, options = {}) {
 
   // Then try compact formats (single sequences) for unprocessed sequences
   for (const seq of sequences) {
-    if (isProcessed(seq)) continue;
+    if (isProcessed(seq) || isInBlacklistedRange(blacklistRanges, seq)) continue;
 
     // 14 digits: YYYYMMDDHHMMSS
     const compact14 = tryCompactDateTime(seq);
@@ -890,8 +1255,8 @@ export function detectTimestampHeuristic(filename, options = {}) {
       continue;
     }
 
-    // 10 digits: Unix timestamp
-    const unix = tryUnixTimestamp(seq);
+    // 10/13/16 digits: Unix timestamp (s/ms/µs)
+    const unix = tryUnixTimestamp(seq, epochRange);
     if (unix) {
       results.push(unix);
       processedRanges.push({ start: seq.start, end: seq.end });
@@ -1027,6 +1392,9 @@ function calculateConfidence(timestamp, filename) {
     'US_DATE': 0.75,
     'FRENCH_TIME': 0.80,
     'COMPACT_DATETIME': CONFIDENCE.MEDIUM_HIGH,
+    'UNIX_TIMESTAMP': CONFIDENCE.HIGH,
+    'UNIX_MILLISECONDS': CONFIDENCE.HIGH,
+    'UNIX_MICROSECONDS': CONFIDENCE.HIGH,
 
     // Medium: Less specific
     'COMPACT_EUROPEAN': 0.65,
@@ -1076,7 +1444,17 @@ function calculateConfidence(timestamp, filename) {
     confidence += CONFIDENCE.BOOST_CONTEXT;
   }
 
-  // Factor 5: Context markers (keywords that suggest timestamps) (+0.10)
+  // Factor 5: Timezone awareness (+0.05)
+  if (timestamp.timezone || typeof timestamp.utcOffsetMinutes === 'number') {
+    confidence += 0.05;
+  }
+
+  // Factor 6: Ambiguity preference hints (+0.05 max)
+  if (timestamp.preferenceBoost) {
+    confidence += timestamp.preferenceBoost;
+  }
+
+  // Factor 7: Context markers (keywords that suggest timestamps) (+0.10)
   const contextMarkers = [
     /\bIMG_/i, /\bVID_/i, /\bPXL_/i, /\bREC_/i,
     /\bScreenshot/i, /\bWhatsApp/i, /\bSignal/i,
@@ -1089,9 +1467,25 @@ function calculateConfidence(timestamp, filename) {
     confidence += CONFIDENCE.BOOST_PRECISION;
   }
 
-  // Factor 6: Penalty for ambiguity (-0.20)
+  // Factor 8: Penalty for ambiguity (-0.20)
   if (timestamp.ambiguous) {
     confidence -= CONFIDENCE.PENALTY_AMBIGUOUS;
+  }
+
+  // Factor 9: Penalty for blacklist-like patterns nearby (-0.10)
+  const blacklistPenaltyMatchers = [
+    /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i,
+    /\bv?\d+\.\d+\.\d+(?:\.\d+)?\b/,
+    /\b\d{3,4}p\b/i,
+    /\bframe\d{3,}\b/i,
+  ];
+  if (blacklistPenaltyMatchers.some((rx) => rx.test(filename))) {
+    confidence -= 0.1;
+  }
+
+  // Factor 10: Bonus for separator coherence (+0.02)
+  if (timestamp.separator && filename.split(timestamp.separator).length > 2) {
+    confidence += 0.02;
   }
 
   // Clamp to [0, 1]
@@ -1102,8 +1496,13 @@ function calculateConfidence(timestamp, filename) {
  * Get the best (most precise) timestamp from filename
  */
 export function getBestTimestamp(filename, options = {}) {
-  const { dateFormat = 'dmy' } = options;
-  const timestamps = detectTimestampHeuristic(filename, { dateFormat });
+  const {
+    dateFormat = 'dmy',
+    debug = false,
+    epochRange = DEFAULT_EPOCH_YEAR_RANGE,
+    contextYear = null,
+  } = options;
+  const timestamps = detectTimestampHeuristic(filename, { dateFormat, debug, epochRange });
 
   if (timestamps.length === 0) {
     return null;
@@ -1124,6 +1523,8 @@ export function getBestTimestamp(filename, options = {}) {
       start: fullDateTime.start,
       end: timeOnly.end,
       type: 'MERGED_DATETIME',
+      timezone: fullDateTime.timezone || timeOnly.timezone,
+      utcOffsetMinutes: fullDateTime.utcOffsetMinutes ?? timeOnly.utcOffsetMinutes,
     };
     // Add confidence score
     merged.confidence = calculateConfidence(merged, filename);
@@ -1168,6 +1569,8 @@ export function getBestTimestamp(filename, options = {}) {
       precision: 'second', // Upgrade precision
       end: dateTimeMinute.end, // Keep original end position
       type: 'MERGED_WITH_SECONDS',
+      timezone: dateTimeMinute.timezone,
+      utcOffsetMinutes: dateTimeMinute.utcOffsetMinutes,
     };
     merged.confidence = calculateConfidence(merged, filename);
     return merged;
@@ -1183,13 +1586,44 @@ export function getBestTimestamp(filename, options = {}) {
     year: 1
   };
 
+  // Build coherence signals (modal year/month, epoch anchor)
+  const yearCounts = timestamps.reduce((acc, ts) => {
+    if (ts.year) acc[ts.year] = (acc[ts.year] || 0) + 1;
+    return acc;
+  }, {});
+  const modalYear = Object.entries(yearCounts).sort((a, b) => b[1] - a[1])[0]?.[0];
+  const monthCounts = timestamps.reduce((acc, ts) => {
+    if (ts.month) acc[ts.month] = (acc[ts.month] || 0) + 1;
+    return acc;
+  }, {});
+  const modalMonth = Object.entries(monthCounts).sort((a, b) => b[1] - a[1])[0]?.[0];
+  const hasEpoch = timestamps.some((ts) => ts.type && ts.type.startsWith('UNIX_'));
+
+  const adjustedConfidence = (ts) => {
+    let conf = calculateConfidence(ts, filename);
+    const allowPrecisionBoost = ts.precision && ts.precision !== 'year';
+    if (allowPrecisionBoost && ts.year && modalYear && Number(ts.year) === Number(modalYear)) conf += 0.05;
+    if (allowPrecisionBoost && ts.month && modalMonth && Number(ts.month) === Number(modalMonth)) conf += 0.02;
+    if (allowPrecisionBoost && contextYear && ts.year && Math.abs(ts.year - contextYear) <= 1) conf += 0.05;
+    if (ts.year && (ts.year < 1980 || ts.year > 2070)) conf -= 0.15;
+    if (allowPrecisionBoost && hasEpoch && ts.type && ts.type.startsWith('UNIX_')) conf += 0.02;
+    if (dateFormat !== 'auto' && ts.ambiguous) {
+      const prefersUS = dateFormat === 'mdy';
+      if (prefersUS && ts.type === 'US_DATE') conf += 0.3;
+      if (!prefersUS && (ts.type === 'EUROPEAN_DATE' || ts.type === 'EUROPEAN_YY_DATE')) conf += 0.3;
+      if (prefersUS && ts.type === 'EUROPEAN_DATE') conf -= 0.5;
+      if (!prefersUS && ts.type === 'US_DATE') conf -= 0.5;
+    }
+    const relPos = Math.min(1, Math.max(0, ts.start / Math.max(1, filename.length)));
+    conf -= relPos * 0.05; // positional tie-breaker to keep early > late
+    return Math.max(0, Math.min(1, conf));
+  };
+
   timestamps.sort((a, b) => {
     // IMPORTANT: Sort by CONFIDENCE first, then precision
-    // This prevents false positives from embedded patterns
-    const confA = calculateConfidence(a, filename);
-    const confB = calculateConfidence(b, filename);
+    const confA = adjustedConfidence(a);
+    const confB = adjustedConfidence(b);
 
-    // If confidence difference is significant (>0.2), use confidence
     if (Math.abs(confA - confB) > 0.2) {
       return confB - confA; // Higher confidence wins
     }
@@ -1215,13 +1649,13 @@ export function getBestTimestamp(filename, options = {}) {
   const best = timestamps[0];
 
   // Add confidence score to the result
-  best.confidence = calculateConfidence(best, filename);
+  best.confidence = adjustedConfidence(best);
 
   // Add alternative timestamps if there are multiple candidates
   if (timestamps.length > 1) {
     best.alternatives = timestamps.slice(1).map(ts => ({
       ...ts,
-      confidence: calculateConfidence(ts, filename)
+      confidence: adjustedConfidence(ts)
     }));
   }
 
@@ -1240,11 +1674,21 @@ export function formatTimestamp(timestamp) {
 
   let result = `${year}-${month}-${day}`;
 
-  if (timestamp.precision === 'second') {
+  if (timestamp.precision === 'second' || timestamp.precision === 'millisecond') {
     const hour = String(timestamp.hour || 0).padStart(2, '0');
     const minute = String(timestamp.minute || 0).padStart(2, '0');
     const second = String(timestamp.second || 0).padStart(2, '0');
     result += `T${hour}:${minute}:${second}`;
+    if (timestamp.precision === 'millisecond') {
+      const ms = String(timestamp.millisecond || 0).padStart(3, '0');
+      result += `.${ms}`;
+    }
+
+    if (timestamp.timezone) {
+      // Normalize UTC to Z for compactness
+      const tz = timestamp.timezone === 'UTC' ? 'Z' : timestamp.timezone;
+      result += tz;
+    }
   }
 
   return result;
@@ -1260,13 +1704,15 @@ export function formatTimestamp(timestamp) {
 export function timestampToDate(timestamp, options = {}) {
   if (!timestamp) return null;
 
+  const { allowTimeOnly = false, defaultDate = null } = options;
+
   // Handle time-only patterns if allowed
-  if (!timestamp.year && options.allowTimeOnly) {
-    // Time-only: use current date
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth();
-    const day = now.getDate();
+  if (!timestamp.year && allowTimeOnly) {
+    // Time-only: use provided default date or current date
+    const base = defaultDate instanceof Date ? defaultDate : new Date();
+    const year = base.getFullYear();
+    const month = base.getMonth();
+    const day = base.getDate();
     const hour = timestamp.hour || 0;
     const minute = timestamp.minute || 0;
     const second = timestamp.second || 0;

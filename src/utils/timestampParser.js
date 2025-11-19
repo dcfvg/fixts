@@ -26,7 +26,7 @@ import { applyCustomPatterns } from './customPatternManager.js';
  * @returns {Date|null} - Parsed date or null if no timestamp found
  */
 export function parseTimestamp(filename, options = {}) {
-  const { dateFormat = 'dmy', allowTimeOnly = false, customOnly = false } = options;
+  const { dateFormat = 'dmy', allowTimeOnly = false, customOnly = false, defaultDate = null } = options;
 
   if (!filename || typeof filename !== 'string') {
     return null;
@@ -35,7 +35,7 @@ export function parseTimestamp(filename, options = {}) {
   // Try custom patterns first (if any are registered)
   const customResult = applyCustomPatterns(filename);
   if (customResult) {
-    return timestampToDate(customResult, { allowTimeOnly });
+    return timestampToDate(customResult, { allowTimeOnly, defaultDate });
   }
 
   // If customOnly is true, don't fallback to heuristic
@@ -44,7 +44,7 @@ export function parseTimestamp(filename, options = {}) {
   }
 
   // Fallback to heuristic detection
-  return parseWithHeuristic(filename, { dateFormat, allowTimeOnly });
+  return parseWithHeuristic(filename, { dateFormat, allowTimeOnly, defaultDate });
 }
 
 /**
@@ -52,9 +52,9 @@ export function parseTimestamp(filename, options = {}) {
  * @private
  */
 function parseWithHeuristic(filename, options = {}) {
-  const { dateFormat = 'dmy', allowTimeOnly = false } = options;
+  const { dateFormat = 'dmy', allowTimeOnly = false, defaultDate = null } = options;
   const timestamp = getBestTimestamp(filename, { dateFormat });
-  return timestampToDate(timestamp, { allowTimeOnly });
+  return timestampToDate(timestamp, { allowTimeOnly, defaultDate });
 }
 
 /**

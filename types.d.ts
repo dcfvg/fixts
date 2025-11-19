@@ -21,6 +21,8 @@
 
 /**
  * @typedef {object} TimestampParseOptions
- * @property {'dmy' | 'mdy'} [dateFormat] - The preferred date format for ambiguous dates.
+ * @property {'dmy' | 'mdy' | 'auto'} [dateFormat] - The preferred date format for ambiguous dates.
+ * @property {number} [contextYear] - Preferred year (corpus hint) to break ties.
  * @property {boolean} [allowTimeOnly] - Whether to allow timestamps with only a time component.
+ * @property {Date} [defaultDate] - Default date to use for time-only parsing when allowTimeOnly is true.
  */

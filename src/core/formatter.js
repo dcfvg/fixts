@@ -188,12 +188,26 @@ function removeTimestampPatterns(filename, primaryTimestamp = null) {
     }
   }
 
+  // Deduplicate and drop ranges already covered by a larger range
+  const uniqueRanges = [];
+  for (const range of timestampsToRemove) {
+    const isContained = uniqueRanges.some(
+      (existing) => range.start >= existing.start && range.end <= existing.end
+    );
+    const isDuplicate = uniqueRanges.some(
+      (existing) => existing.start === range.start && existing.end === range.end
+    );
+    if (!isContained && !isDuplicate) {
+      uniqueRanges.push(range);
+    }
+  }
+
   // Sort by start position (descending) so we remove from end to beginning
   // This prevents position shifts from affecting later removals
-  timestampsToRemove.sort((a, b) => b.start - a.start);
+  uniqueRanges.sort((a, b) => b.start - a.start);
 
   // Remove all timestamps
-  for (const { start, end } of timestampsToRemove) {
+  for (const { start, end } of uniqueRanges) {
     const before = cleaned.slice(0, start);
     const after = cleaned.slice(end);
     cleaned = (before + after).replace(/^[-_\s]+|[-_\s]+$/g, '').trim();

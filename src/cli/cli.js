@@ -156,7 +156,7 @@ function parseArgs(args) {
       if (i + 1 < args.length) {
         const depthArg = args[++i];
         let depthValue;
-        
+
         // Allow "Infinity" or "unlimited" as special values
         if (depthArg.toLowerCase() === 'infinity' || depthArg.toLowerCase() === 'unlimited') {
           depthValue = Infinity;

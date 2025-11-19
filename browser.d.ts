@@ -9,6 +9,12 @@ export interface TimestampInfo {
   minute?: number;
   second?: number;
   millisecond?: number;
+  timezone?: string;
+  utcOffsetMinutes?: number | null;
+  unixMs?: number;
+  separator?: string;
+  trace?: string;
+  preferenceBoost?: number;
   precision?: 'year' | 'month' | 'day' | 'minute' | 'second' | 'millisecond';
   ambiguous?: boolean;
   alternatives?: Array<{
@@ -48,9 +54,12 @@ export interface DefinedComponents {
 }
 
 export interface ParseOptions {
-  dateFormat?: 'dmy' | 'mdy';
+  dateFormat?: 'dmy' | 'mdy' | 'auto';
   allowTimeOnly?: boolean;
+  defaultDate?: Date | null;
   customOnly?: boolean;
+  debug?: boolean;
+  epochRange?: { min: number; max: number };
   timeShiftMs?: number;
   // Progressive batch processing options (Phase 1)
   chunkSize?: number | 'auto';
@@ -108,7 +117,7 @@ export function getDetectionInfo(filename: string): DetectionInfo;
 // Heuristic detection
 export function getBestTimestamp(
   filename: string,
-  options?: { dateFormat?: 'dmy' | 'mdy' }
+  options?: { dateFormat?: 'dmy' | 'mdy' | 'auto'; debug?: boolean; epochRange?: { min: number; max: number }; contextYear?: number }
 ): TimestampInfo | null;
 
 export function formatTimestamp(timestamp: TimestampInfo | null): string | null;
