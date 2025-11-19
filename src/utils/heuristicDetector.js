@@ -97,6 +97,7 @@ const MONTHS_ABBR = {
 /**
  * Precompute blacklist ranges (GUIDs, hex IDs, versions, resolutions/bitrates, backup markers)
  * These ranges are skipped or penalized to reduce false positives
+ * @param filename
  */
 function detectBlacklistedRanges(filename) {
   const ranges = [];
@@ -127,6 +128,11 @@ function detectBlacklistedRanges(filename) {
   return ranges;
 }
 
+/**
+ *
+ * @param ranges
+ * @param seq
+ */
 function isInBlacklistedRange(ranges, seq) {
   return ranges.some((range) => seq.start >= range.start && seq.end <= range.end);
 }
@@ -134,6 +140,7 @@ function isInBlacklistedRange(ranges, seq) {
 /**
  * Extract all digit sequences from filename
  * Returns array of {value, start, end, digits}
+ * @param filename
  */
 export function extractDigitSequences(filename) {
   const sequences = [];
@@ -183,8 +190,8 @@ function getSeparatorBetween(filename, pos1, pos2) {
 
 /**
  * Try to parse as compact date: YYYYMMDD (8 digits) or DDMMYYYY (8 digits)
- * @param {Object} seq - Digit sequence object from extractDigitSequences
- * @returns {Object|null} - Parsed timestamp or null
+ * @param {object} seq - Digit sequence object from extractDigitSequences
+ * @returns {object | null} - Parsed timestamp or null
  * @private
  */
 function tryCompactDate(seq) {
@@ -283,6 +290,11 @@ const DEFAULT_EPOCH_YEAR_RANGE = {
   max: 2035,
 };
 
+/**
+ *
+ * @param date
+ * @param epochRange
+ */
 function isDateWithinEpochRange(date, epochRange = DEFAULT_EPOCH_YEAR_RANGE) {
   if (!date || Number.isNaN(date.getTime())) return false;
   const year = date.getUTCFullYear();
@@ -291,9 +303,9 @@ function isDateWithinEpochRange(date, epochRange = DEFAULT_EPOCH_YEAR_RANGE) {
 
 /**
  * Try to parse as Unix timestamp in seconds (10 digits), milliseconds (13 digits) or microseconds (16 digits)
- * @param {Object} seq - Digit sequence object from extractDigitSequences
- * @param {Object} epochRange - Allowed UTC year window for epoch conversion
- * @returns {Object|null} - Parsed timestamp or null
+ * @param {object} seq - Digit sequence object from extractDigitSequences
+ * @param {object} epochRange - Allowed UTC year window for epoch conversion
+ * @returns {object | null} - Parsed timestamp or null
  * @private
  */
 function tryUnixTimestamp(seq, epochRange = DEFAULT_EPOCH_YEAR_RANGE) {
@@ -341,8 +353,8 @@ function tryUnixTimestamp(seq, epochRange = DEFAULT_EPOCH_YEAR_RANGE) {
 
 /**
  * Try to parse as compact datetime: YYYYMMDDHHMMSS (14 digits)
- * @param {Object} seq - Digit sequence object from extractDigitSequences
- * @returns {Object|null} - Parsed timestamp or null
+ * @param {object} seq - Digit sequence object from extractDigitSequences
+ * @returns {object | null} - Parsed timestamp or null
  * @private
  */
 function tryCompactDateTime(seq) {
@@ -383,8 +395,8 @@ function tryCompactDateTime(seq) {
 
 /**
  * Try to parse as compact time: HHMMSS (6 digits) or HHMM (4 digits)
- * @param {Object} seq - Digit sequence object from extractDigitSequences
- * @returns {Object|null} - Parsed timestamp or null
+ * @param {object} seq - Digit sequence object from extractDigitSequences
+ * @returns {object | null} - Parsed timestamp or null
  * @private
  */
 function tryCompactTime(seq) {
@@ -432,9 +444,9 @@ function tryCompactTime(seq) {
 
 /**
  * Try to parse as YYYYMM (6 digits) or YYMMDD (6 digits)
- * @param {Object} seq - Digit sequence object from extractDigitSequences
+ * @param {object} seq - Digit sequence object from extractDigitSequences
  * @param {string} _filename - Filename context (unused but kept for API consistency)
- * @returns {Object|null} - Parsed timestamp or null
+ * @returns {object | null} - Parsed timestamp or null
  * @private
  */
 function trySixDigits(seq, _filename) {
@@ -504,9 +516,9 @@ function trySixDigits(seq, _filename) {
 
 /**
  * Try to parse as 4 digits: YYYY, HHMM, or YYMM
- * @param {Object} seq - Digit sequence object from extractDigitSequences
+ * @param {object} seq - Digit sequence object from extractDigitSequences
  * @param {string} filename - Filename for context
- * @returns {Object|null} - Parsed timestamp or null
+ * @returns {object | null} - Parsed timestamp or null
  * @private
  */
 function tryFourDigits(seq, filename) {
@@ -619,7 +631,7 @@ function tryFourDigits(seq, filename) {
  * Detect French time format: HHhMMmSSsmmm or HHhMMmSSs
  * Examples: 14h05m37s448, 19h22m44s055
  * @param {string} filename - Filename to search
- * @returns {Array<Object>} - Array of detected French time matches
+ * @returns {Array<object>} - Array of detected French time matches
  * @private
  */
 function detectFrenchTime(filename) {
@@ -659,10 +671,10 @@ function detectFrenchTime(filename) {
  *  - 2024-03-15T12.30.45Z
  *  - 20240315 123045+0200
  * @param {string} filename
- * @param {Object} options
+ * @param {object} options
  * @param {boolean} options.debug
- * @param {Object} options.epochRange
- * @returns {Array<Object>}
+ * @param {object} options.epochRange
+ * @returns {Array<object>}
  */
 function detectIsoLikeDateTimes(filename, { debug = false, epochRange: _epochRange = DEFAULT_EPOCH_YEAR_RANGE } = {}) {
   const matches = [];
@@ -725,7 +737,7 @@ function detectIsoLikeDateTimes(filename, { debug = false, epochRange: _epochRan
  * Detect dates with month names/abbreviations (English)
  * Examples: 15-Mar-2024, Mar_15_2024
  * @param {string} filename
- * @param {Object} options
+ * @param {object} options
  * @param {boolean} options.debug
  */
 function detectMonthNameDates(filename, { debug = false } = {}) {
@@ -783,6 +795,7 @@ function detectMonthNameDates(filename, { debug = false } = {}) {
 /**
  * Infer date format preference from filename context (very lightweight heuristic)
  * Returns 'mdy' or 'dmy'
+ * @param filename
  */
 function inferDateFormatPreference(filename) {
   const lower = filename.toLowerCase();
@@ -812,10 +825,10 @@ function inferDateFormatPreference(filename) {
  * - DD-MM-YYYY (2-2-4)
  * - YY-MM-DD (2-2-2)
  * - HH:MM:SS (2-2-2 with colon)
- * @param {Array<Object>} sequences - Digit sequences from extractDigitSequences
+ * @param {Array<object>} sequences - Digit sequences from extractDigitSequences
  * @param {string} filename - Filename for context
  * @param {string} dateFormat - Date format preference ('dmy' or 'mdy')
- * @returns {Object|null} - Parsed timestamp components or null
+ * @returns {object | null} - Parsed timestamp components or null
  * @private
  */
 function analyzeSeparatedComponents(sequences, filename, { dateFormat = 'dmy', localePreference = 'dmy', debug = false } = {}) {
@@ -1091,7 +1104,7 @@ function parseTimezoneOffset(tzString) {
  * Detect timezone token immediately following a timestamp
  * @param {string} filename
  * @param {number} index - Position to start searching (typically end of time component)
- * @returns {Object|null}
+ * @returns {object | null}
  */
 function detectTimezoneAt(filename, index) {
   const tail = filename.slice(index);
@@ -1113,9 +1126,9 @@ function detectTimezoneAt(filename, index) {
 
 /**
  * Combine date and time components that are adjacent
- * @param {Array<Object>} components - Parsed timestamp components
+ * @param {Array<object>} components - Parsed timestamp components
  * @param {string} filename - Filename for context
- * @returns {Array<Object>} - Combined date-time components
+ * @returns {Array<object>} - Combined date-time components
  * @private
  */
 function combineDateTimeComponents(components, filename) {
@@ -1181,6 +1194,8 @@ function combineDateTimeComponents(components, filename) {
 /**
  * Main heuristic detection function
  * Returns array of detected timestamps with their positions
+ * @param filename
+ * @param options
  */
 export function detectTimestampHeuristic(filename, options = {}) {
   const {
@@ -1366,7 +1381,7 @@ export function detectTimestampHeuristic(filename, options = {}) {
 
 /**
  * Calculate confidence score for a detected timestamp
- * @param {Object} timestamp - Detected timestamp object
+ * @param {object} timestamp - Detected timestamp object
  * @param {string} filename - Original filename
  * @returns {number} - Confidence score (0.0 - 1.0)
  */
@@ -1494,6 +1509,8 @@ function calculateConfidence(timestamp, filename) {
 
 /**
  * Get the best (most precise) timestamp from filename
+ * @param filename
+ * @param options
  */
 export function getBestTimestamp(filename, options = {}) {
   const {
@@ -1664,6 +1681,7 @@ export function getBestTimestamp(filename, options = {}) {
 
 /**
  * Format timestamp as ISO string
+ * @param timestamp
  */
 export function formatTimestamp(timestamp) {
   if (!timestamp) return null;
@@ -1696,8 +1714,8 @@ export function formatTimestamp(timestamp) {
 
 /**
  * Convert timestamp to Date object for compatibility with existing code
- * @param {Object} timestamp - Parsed timestamp object
- * @param {Object} options - Conversion options
+ * @param {object} timestamp - Parsed timestamp object
+ * @param {object} options - Conversion options
  * @param {boolean} options.allowTimeOnly - Allow time-only patterns (uses current date)
  * @returns {Date|null}
  */

@@ -8,7 +8,10 @@
 /**
  * Date and time limits
  */
-export const DATE_LIMITS = {
+export /**
+        *
+        */
+const DATE_LIMITS = {
   MIN_YEAR: 1970,
   MAX_YEAR: 2100,
   TWO_DIGIT_YEAR_THRESHOLD: 70, // Years < 70 are 20xx, >= 70 are 19xx
@@ -25,7 +28,10 @@ export const DATE_LIMITS = {
 /**
  * File system limits
  */
-export const FILE_LIMITS = {
+export /**
+        *
+        */
+const FILE_LIMITS = {
   MAX_FILENAME_LENGTH: 255,
   MAX_PATH_LENGTH: 4096
 };
@@ -33,7 +39,10 @@ export const FILE_LIMITS = {
 /**
  * Default date format templates
  */
-export const DATE_TEMPLATES = {
+export /**
+        *
+        */
+const DATE_TEMPLATES = {
   ISO: 'YYYY-MM-DD',
   US: 'MM/DD/YYYY',
   EU: 'DD/MM/YYYY',
@@ -43,7 +52,10 @@ export const DATE_TEMPLATES = {
 /**
  * File extension configuration
  */
-export const FILE_EXTENSIONS = {
+export /**
+        *
+        */
+const FILE_EXTENSIONS = {
   // Matches single or compound extensions (e.g., .txt, .tar.gz, .backup.zip, .m4a, .mp4)
   // Must contain at least one letter, 2-5 characters per segment
   // Pattern explanation: Each segment must have at least one letter [a-zA-Z]
@@ -56,7 +68,10 @@ export const FILE_EXTENSIONS = {
 /**
  * Performance optimization settings
  */
-export const PERFORMANCE = {
+export /**
+        *
+        */
+const PERFORMANCE = {
   REGEX_CACHE_SIZE: 100,
   MAX_FILE_SCAN_DEPTH: 10
 };
@@ -64,7 +79,10 @@ export const PERFORMANCE = {
 /**
  * Default options
  */
-export const DEFAULTS = {
+export /**
+        *
+        */
+const DEFAULTS = {
   DATE_FORMAT: 'YYYY-MM-DD - {name}',
   DRY_RUN: true,
   COPY_MODE: false,
@@ -75,7 +93,10 @@ export const DEFAULTS = {
  * Confidence score thresholds
  * Used for timestamp detection reliability assessment
  */
-export const CONFIDENCE = {
+export /**
+        *
+        */
+const CONFIDENCE = {
   // Threshold levels
   VERY_HIGH: 0.95,  // EXIF/metadata - highly reliable
   HIGH: 0.85,       // ISO format, custom patterns - reliable

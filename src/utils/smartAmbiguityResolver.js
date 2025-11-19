@@ -45,8 +45,8 @@ function calculateConfidence(interpretedDate, mtime) {
 /**
  * Resolve day-month ambiguity using mtime heuristic
  * @param {string} filePath - Path to file
- * @param {Object} ambiguity - Ambiguity object from detectAmbiguity
- * @returns {Object} - { resolution: 'dmy'|'mdy', confidence: number, suggestion: string }
+ * @param {object} ambiguity - Ambiguity object from detectAmbiguity
+ * @returns {object} - { resolution: 'dmy'|'mdy', confidence: number, suggestion: string }
  * @private
  */
 function resolveDayMonthAmbiguity(filePath, ambiguity) {
@@ -95,8 +95,8 @@ function resolveDayMonthAmbiguity(filePath, ambiguity) {
 /**
  * Resolve two-digit year ambiguity using mtime heuristic
  * @param {string} filePath - Path to file
- * @param {Object} ambiguity - Ambiguity object from detectAmbiguity
- * @returns {Object} - { resolution: '2000s'|'1900s', confidence: number, suggestion: string }
+ * @param {object} ambiguity - Ambiguity object from detectAmbiguity
+ * @returns {object} - { resolution: '2000s'|'1900s', confidence: number, suggestion: string }
  * @private
  */
 function resolveTwoDigitYearAmbiguity(filePath, ambiguity) {
@@ -161,7 +161,7 @@ function getMonthName(month) {
  * Analyze ambiguous file using mtime heuristic
  * @param {string} filePath - Path to file
  * @param {string} filename - Filename (optional, defaults to basename of filePath)
- * @returns {Object|null} - Smart resolution or null if not ambiguous
+ * @returns {object | null} - Smart resolution or null if not ambiguous
  */
 export function analyzeAmbiguousFile(filePath, filename = null) {
   const name = filename || filePath.split('/').pop();
@@ -190,7 +190,7 @@ export function analyzeAmbiguousFile(filePath, filename = null) {
  * Batch analyze ambiguous files with smart resolution
  * @param {Array<{path: string, name: string}>} files - Array of file objects
  * @param {number} autoResolveThreshold - Confidence threshold for auto-resolution (default: 80)
- * @returns {Object} - { autoResolved: Map, needsPrompt: Array, stats: Object }
+ * @returns {object} - { autoResolved: Map, needsPrompt: Array, stats: Object }
  */
 export function batchAnalyzeAmbiguousFiles(files, autoResolveThreshold = 80) {
   const autoResolved = new Map();

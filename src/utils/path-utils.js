@@ -12,7 +12,6 @@
 /**
  * Get the base name from a file path
  * Works with both forward slashes (/) and backslashes (\)
- *
  * @param {string} filepath - File path
  * @returns {string} - Base name (filename with extension)
  * @example
@@ -28,7 +27,6 @@ export function getBasename(filepath) {
 
 /**
  * Get the directory name from a file path
- *
  * @param {string} filepath - File path
  * @returns {string} - Directory path
  * @example
@@ -46,7 +44,6 @@ export function getDirname(filepath) {
 
 /**
  * Get the file extension from a filename
- *
  * @param {string} filename - File name
  * @returns {string} - Extension including the dot, or empty string
  * @example
@@ -70,7 +67,6 @@ export function getExtension(filename) {
 
 /**
  * Get filename without extension
- *
  * @param {string} filename - File name
  * @returns {string} - Filename without extension
  * @example
@@ -87,7 +83,6 @@ export function getNameWithoutExt(filename) {
 
 /**
  * Join path segments
- *
  * @param {...string} parts - Path segments to join
  * @returns {string} - Joined path
  * @example
@@ -109,7 +104,6 @@ export function joinPaths(...parts) {
 
 /**
  * Normalize path separators to forward slashes
- *
  * @param {string} filepath - File path
  * @returns {string} - Normalized path
  * @example
@@ -124,7 +118,6 @@ export function normalizePath(filepath) {
 
 /**
  * Check if path is absolute
- *
  * @param {string} filepath - File path
  * @returns {boolean} - True if absolute path
  * @example
@@ -144,7 +137,6 @@ export function isAbsolute(filepath) {
 /**
  * Get relative path from one path to another
  * Simple implementation that works for basic cases
- *
  * @param {string} from - From path
  * @param {string} to - To path
  * @returns {string} - Relative path
@@ -173,7 +165,6 @@ export function getRelativePath(from, to) {
 
 /**
  * Split path into directory and basename
- *
  * @param {string} filepath - File path
  * @returns {{dir: string, base: string}} - Directory and basename
  * @example
@@ -188,7 +179,6 @@ export function splitPath(filepath) {
 
 /**
  * Split basename into name and extension
- *
  * @param {string} filename - File name
  * @returns {{name: string, ext: string}} - Name and extension
  * @example

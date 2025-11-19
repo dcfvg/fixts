@@ -10,7 +10,6 @@
  * - Audio metadata (MP3, M4A, etc.) - requires File API
  *
  * Note: File system metadata (mtime, birthtime) not available in browser
- *
  * @module unifiedMetadataExtractor-browser
  */
 
@@ -24,7 +23,10 @@ import { processInChunks } from './batchProgressHelper.js';
 /**
  * Timestamp source types (browser-safe subset)
  */
-export const SOURCE_TYPE = {
+export /**
+        *
+        */
+const SOURCE_TYPE = {
   FILENAME: 'filename',
   EXIF: 'exif',
   AUDIO: 'audio',
@@ -34,7 +36,10 @@ export const SOURCE_TYPE = {
 /**
  * Default source priority (browser-safe)
  */
-export const DEFAULT_PRIORITY = [
+export /**
+        *
+        */
+const DEFAULT_PRIORITY = [
   SOURCE_TYPE.FILENAME,
   SOURCE_TYPE.EXIF,
   SOURCE_TYPE.AUDIO
@@ -42,14 +47,13 @@ export const DEFAULT_PRIORITY = [
 
 /**
  * Extract timestamp from any available source (browser-safe)
- *
  * @param {string|File} filepath - Filename string or File object
- * @param {Object} options - Extraction options
+ * @param {object} options - Extraction options
  * @param {string[]} options.sources - Source priority order (default: DEFAULT_PRIORITY)
  * @param {boolean} options.includeAll - Return all sources, not just first match (default: false)
  * @param {boolean} options.includeConfidence - Include confidence scores (default: true)
- * @param {Object} options.parsingOptions - Options for filename parsing (dateFormat, allowTimeOnly, etc.)
- * @returns {Object|null} - Extraction result or null if no timestamp found
+ * @param {object} options.parsingOptions - Options for filename parsing (dateFormat, allowTimeOnly, etc.)
+ * @returns {object | null} - Extraction result or null if no timestamp found
  */
 export async function extractTimestamp(filepath, options = {}) {
   const {
@@ -129,6 +133,8 @@ export async function extractTimestamp(filepath, options = {}) {
 
 /**
  * Extract timestamp from filename
+ * @param basename
+ * @param options
  * @private
  */
 async function extractFromFilename(basename, options) {
@@ -152,6 +158,8 @@ async function extractFromFilename(basename, options) {
 
 /**
  * Extract timestamp from EXIF data
+ * @param filepath
+ * @param isFileObject
  * @private
  */
 async function extractFromEXIF(filepath, isFileObject) {
@@ -176,6 +184,8 @@ async function extractFromEXIF(filepath, isFileObject) {
 
 /**
  * Extract timestamp from audio metadata
+ * @param filepath
+ * @param isFileObject
  * @private
  */
 async function extractFromAudio(filepath, isFileObject) {
@@ -200,6 +210,7 @@ async function extractFromAudio(filepath, isFileObject) {
 
 /**
  * Check if file extension is an image format
+ * @param ext
  * @private
  */
 function isImageFile(ext) {
@@ -209,6 +220,7 @@ function isImageFile(ext) {
 
 /**
  * Check if file extension is an audio format
+ * @param ext
  * @private
  */
 function isAudioFile(ext) {
@@ -218,9 +230,8 @@ function isAudioFile(ext) {
 
 /**
  * Batch extract timestamps from multiple files/filenames
- *
  * @param {Array<string|File>} filepaths - Array of file paths or File objects
- * @param {Object} options - Extraction options (same as extractTimestamp)
+ * @param {object} options - Extraction options (same as extractTimestamp)
  * @param {number|'auto'} options.chunkSize - Process N files at a time, or 'auto' for optimal size (default: 'auto')
  * @param {Function} options.onProgress - Progress callback: ({completed, total, percentage, elapsedMs, estimatedRemainingMs, filesPerSecond}) => void
  * @param {boolean} options.yieldBetweenChunks - Yield to event loop between chunks for UI responsiveness (default: true)
@@ -267,11 +278,10 @@ export async function extractTimestampBatch(filepaths, options = {}) {
 
 /**
  * Compare timestamps from different sources and detect discrepancies
- *
  * @param {string|File} filepath - Filename string or File object
- * @param {Object} options - Comparison options
+ * @param {object} options - Comparison options
  * @param {number} options.thresholdSeconds - Max difference before warning (default: 60)
- * @returns {Promise<Object>} - Comparison result with warnings
+ * @returns {Promise<object>} - Comparison result with warnings
  */
 export async function compareTimestampSources(filepath, options = {}) {
   const { thresholdSeconds = 60 } = options;
@@ -326,9 +336,8 @@ export async function compareTimestampSources(filepath, options = {}) {
 
 /**
  * Get statistics about timestamp sources in a batch of files
- *
  * @param {Array<string|File>} filepaths - Array of file paths or File objects
- * @returns {Promise<Object>} - Statistics about sources used
+ * @returns {Promise<object>} - Statistics about sources used
  */
 export async function getSourceStatistics(filepaths) {
   const results = await extractTimestampBatch(filepaths);
@@ -377,9 +386,8 @@ export async function getSourceStatistics(filepaths) {
 
 /**
  * Suggest best timestamp source for a file
- *
  * @param {string|File} filepath - Filename string or File object
- * @returns {Promise<Object>} - Suggestion with reasoning
+ * @returns {Promise<object>} - Suggestion with reasoning
  */
 export async function suggestBestSource(filepath) {
   const result = await extractTimestamp(filepath, {

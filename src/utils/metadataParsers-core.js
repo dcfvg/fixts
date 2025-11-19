@@ -8,7 +8,6 @@
  * Platform-specific file loading is handled by:
  * - fileMetadataParser.js (Node.js with fs.readFile)
  * - fileMetadataParser-browser.js (browser with File API)
- *
  * @module metadataParsers-core
  * @browserSafe true
  */
@@ -18,8 +17,7 @@ import { parseEXIFDateTime } from './dateUtils.js';
 /**
  * Extract date from EXIF tags object
  * Priority: DateTimeOriginal > DateTimeDigitized > DateTime
- *
- * @param {Object} tags - Parsed EXIF tags object from ExifReader
+ * @param {object} tags - Parsed EXIF tags object from ExifReader
  * @returns {Date|null} - Extracted date or null
  */
 export function extractDateFromEXIFTags(tags) {
@@ -64,8 +62,7 @@ export function extractDateFromEXIFTags(tags) {
 /**
  * Extract date from audio metadata object
  * Priority: common.date > format.creationTime > format.modificationTime > common.year
- *
- * @param {Object} metadata - Parsed audio metadata from music-metadata
+ * @param {object} metadata - Parsed audio metadata from music-metadata
  * @returns {Date|null} - Extracted date or null
  */
 export function extractDateFromAudioMetadata(metadata) {

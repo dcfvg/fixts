@@ -9,6 +9,9 @@
  * PauseToken for controlling batch processing
  */
 export class PauseToken {
+  /**
+   *
+   */
   constructor() {
     this._paused = false;
     this._pausePromise = null;
@@ -64,6 +67,10 @@ export class PauseToken {
  * Custom error class for aborted operations
  */
 export class AbortError extends Error {
+  /**
+   *
+   * @param message
+   */
   constructor(message = 'Operation aborted') {
     super(message);
     this.name = 'AbortError';
@@ -168,7 +175,7 @@ export class BatchProgressTracker {
 
   /**
    * Get final statistics
-   * @returns {Object} - Final processing statistics
+   * @returns {object} - Final processing statistics
    */
   getFinalStats() {
     const elapsedMs = Date.now() - this.startTime;
@@ -203,7 +210,7 @@ export function yieldToEventLoop() {
  * @template T, R
  * @param {T[]} items - Items to process
  * @param {Function} processItem - Function to process each item: (item) => Promise<R>
- * @param {Object} options - Processing options
+ * @param {object} options - Processing options
  * @param {number|'auto'} options.chunkSize - Chunk size or 'auto' for automatic
  * @param {Function} options.onProgress - Progress callback
  * @param {Function} options.onItemProcessed - Callback invoked after each item is processed: (item, result, index) => void

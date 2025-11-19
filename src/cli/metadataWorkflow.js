@@ -13,7 +13,7 @@ import { promptConfirmation } from './prompts.js';
 /**
  * Display metadata extraction results
  * @param {Array} results - Metadata extraction results
- * @param {Object} options - Display options
+ * @param {object} options - Display options
  */
 function displayMetadataResults(results, options = {}) {
   const { showSource = true } = options;
@@ -32,8 +32,8 @@ function displayMetadataResults(results, options = {}) {
 /**
  * Execute metadata-based renaming workflow
  * @param {string} targetPath - Path to scan
- * @param {Object} options - Workflow options
- * @returns {Promise<Object>} - Execution result with stats
+ * @param {object} options - Workflow options
+ * @returns {Promise<object>} - Execution result with stats
  */
 export async function executeMetadataWorkflow(targetPath, options = {}) {
 
@@ -215,8 +215,8 @@ export async function executeMetadataWorkflow(targetPath, options = {}) {
 /**
  * Prompt user to try metadata extraction (for when no timestamps found)
  * @param {string} targetPath - Path to scan
- * @param {Object} options - Workflow options
- * @returns {Promise<Object>} - Execution result
+ * @param {object} options - Workflow options
+ * @returns {Promise<object>} - Execution result
  */
 export async function promptMetadataFallback(targetPath, options = {}) {
   const {

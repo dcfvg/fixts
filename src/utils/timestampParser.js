@@ -17,9 +17,8 @@ import { applyCustomPatterns } from './customPatternManager.js';
 
 /**
  * Parse timestamp from filename using heuristic detection
- *
  * @param {string} filename - Filename to parse
- * @param {Object} options - Parsing options
+ * @param {object} options - Parsing options
  * @param {string} options.dateFormat - Date format for ambiguous dates: 'dmy' or 'mdy' (default: 'dmy')
  * @param {boolean} options.allowTimeOnly - Allow time-only formats (uses current date) (default: false)
  * @param {boolean} options.customOnly - Only use custom patterns, skip heuristic (default: false)
@@ -49,6 +48,9 @@ export function parseTimestamp(filename, options = {}) {
 
 /**
  * Parse using heuristic detection
+ * @param {string} filename - Filename to parse
+ * @param {object} options - Parsing options
+ * @returns {Date|null} Parsed date or null if not found
  * @private
  */
 function parseWithHeuristic(filename, options = {}) {
@@ -59,9 +61,8 @@ function parseWithHeuristic(filename, options = {}) {
 
 /**
  * Get detailed detection info (for debugging/analysis)
- *
  * @param {string} filename - Filename to analyze
- * @returns {Object} - Detection details including confidence scores
+ * @returns {object} - Detection details including confidence scores
  */
 export function getDetectionInfo(filename) {
   const customTimestamp = applyCustomPatterns(filename);
@@ -98,6 +99,9 @@ export function getDetectionInfo(filename) {
  * Examples:
  * parseTimestampFromFilename('photo-2024-11-02.jpg')  // Date object
  * parseTimestampFromFilename('IMG_20241102_143025.jpg') // Date object with time
+ * @param {string} filename - Filename to parse
+ * @param {object} options - Parsing options (dateFormat, allowTimeOnly, defaultDate)
+ * @returns {Date|null} Parsed date or null if not found
  */
 export function parseTimestampFromFilename(filename, options = {}) {
   return parseTimestamp(filename, options);
@@ -106,6 +110,9 @@ export function parseTimestampFromFilename(filename, options = {}) {
 /**
  * Alias for parseTimestampFromFilename
  * Provided for consistency with old timestampUtils.js API
+ * @param {string} filename - Filename to parse
+ * @param {object} options - Parsing options (dateFormat, allowTimeOnly, defaultDate)
+ * @returns {Date|null} Parsed date or null if not found
  */
 export function parseTimestampFromName(filename, options = {}) {
   return parseTimestamp(filename, options);

@@ -7,10 +7,14 @@
 
 /**
  * @class FixtsError
- * @extends Error
+ * @augments Error
  * @description Base class for all fixts-specific errors.
  */
 export class FixtsError extends Error {
+  /**
+   * Create a new FixtsError
+   * @param {string} message - Error message
+   */
   constructor(message) {
     super(message);
     this.name = this.constructor.name;
@@ -19,10 +23,14 @@ export class FixtsError extends Error {
 
 /**
  * @class TimestampNotFoundError
- * @extends FixtsError
+ * @augments FixtsError
  * @description Thrown when no timestamp can be found in a filename.
  */
 export class TimestampNotFoundError extends FixtsError {
+  /**
+   * Create a TimestampNotFoundError
+   * @param {string} filename - Name of the file where timestamp was not found
+   */
   constructor(filename) {
     super(`No timestamp found in: ${filename}`);
     this.filename = filename;
@@ -31,7 +39,7 @@ export class TimestampNotFoundError extends FixtsError {
 
 /**
  * @class FileAccessError
- * @extends FixtsError
+ * @augments FixtsError
  * @description Thrown when a file system operation fails.
  */
 export class FileAccessError extends FixtsError {
@@ -50,7 +58,7 @@ export class FileAccessError extends FixtsError {
 
 /**
  * @class AmbiguityError
- * @extends FixtsError
+ * @augments FixtsError
  * @description Thrown when an ambiguous timestamp is detected and cannot be resolved.
  */
 export class AmbiguityError extends FixtsError {

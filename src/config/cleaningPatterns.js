@@ -11,7 +11,6 @@
  * Apply generic cleaning to preserve original filename structure
  * Only removes composition artifacts from timestamp removal and
  * obvious technical metadata that adds no semantic value
- *
  * @param {string} filename - Filename remainder after timestamp removal
  * @returns {string} - Cleaned filename
  */

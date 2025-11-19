@@ -13,7 +13,7 @@ import { getBestTimestamp } from './heuristicDetector.js';
 /**
  * Detect the pattern type of a filename
  * @param {string} filename - Filename to analyze
- * @returns {Object} - { pattern, description, hasTime, hasDate, precision, icon, ambiguous }
+ * @returns {object} - { pattern, description, hasTime, hasDate, precision, icon, ambiguous }
  */
 export function detectPattern(filename) {
   const timestamp = getBestTimestamp(filename);
@@ -44,7 +44,7 @@ export function detectPattern(filename) {
 
 /**
  * Group files by their patterns
- * @param {Array<Object>} files - Array of file objects with { path, name }
+ * @param {Array<object>} files - Array of file objects with { path, name }
  * @returns {Map} - Map of pattern -> array of files
  */
 export function groupByPattern(files) {
@@ -76,7 +76,7 @@ export function groupByPattern(files) {
 /**
  * Create a summary of all patterns found
  * @param {Map} groups - Map from groupByPattern
- * @returns {Object} - Summary statistics
+ * @returns {object} - Summary statistics
  */
 export function createSummary(groups) {
   const summary = {
@@ -116,7 +116,7 @@ export function createSummary(groups) {
 
 /**
  * Display a formatted summary of file patterns
- * @param {Object} summary - Summary from createSummary
+ * @param {object} summary - Summary from createSummary
  */
 export function displaySummary(summary) {
   console.log('\n📊 File Pattern Analysis\n');
@@ -145,7 +145,7 @@ export function displaySummary(summary) {
 
 /**
  * Display files in a specific group
- * @param {Object} group - Group object from groupByPattern
+ * @param {object} group - Group object from groupByPattern
  * @param {number} maxDisplay - Maximum number of files to display
  */
 export function displayGroup(group, maxDisplay = 5) {

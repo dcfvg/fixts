@@ -5,7 +5,6 @@
  *
  * This module is safe to bundle with Vite/Webpack for browser usage.
  * For Node.js usage, import from fileMetadataParser.js instead.
- *
  * @module fileMetadataParser-browser
  * @browserSafe true
  */

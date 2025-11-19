@@ -1,8 +1,13 @@
 import js from '@eslint/js';
+import jsdoc from 'eslint-plugin-jsdoc';
 
 export default [
   js.configs.recommended,
+  jsdoc.configs['flat/recommended'],
   {
+    plugins: {
+      jsdoc
+    },
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'module',
@@ -32,6 +37,32 @@ export default [
       'no-trailing-spaces': 'error',
       'eol-last': ['error', 'always'],
       'no-multiple-empty-lines': ['error', { max: 2, maxEOF: 0 }],
+
+      // JSDoc rules
+      'jsdoc/require-jsdoc': ['warn', {
+        require: {
+          FunctionDeclaration: true,
+          MethodDefinition: true,
+          ClassDeclaration: true,
+          ArrowFunctionExpression: false,
+          FunctionExpression: true
+        },
+        contexts: [
+          'ExportNamedDeclaration > FunctionDeclaration',
+          'ExportNamedDeclaration > VariableDeclaration'
+        ]
+      }],
+      'jsdoc/require-param': 'warn',
+      'jsdoc/require-param-type': 'warn',
+      'jsdoc/require-returns': 'warn',
+      'jsdoc/require-returns-type': 'warn',
+      'jsdoc/require-param-description': 'warn',
+      'jsdoc/require-returns-description': 'warn',
+      'jsdoc/check-param-names': 'error',
+      'jsdoc/check-types': 'warn',
+      'jsdoc/valid-types': 'warn',
+      'jsdoc/check-tag-names': ['warn', { definedTags: ['browserSafe'] }],
+      'jsdoc/no-undefined-types': 'off', // Allow custom types from typedef
     }
   },
   {

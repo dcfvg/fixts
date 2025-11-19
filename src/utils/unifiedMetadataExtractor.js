@@ -24,7 +24,10 @@ import { globalMetadataCache } from './metadataCache.js';
 /**
  * Timestamp source types
  */
-export const SOURCE_TYPE = {
+export /**
+        *
+        */
+const SOURCE_TYPE = {
   FILENAME: 'filename',
   EXIF: 'exif',
   AUDIO: 'audio',
@@ -36,7 +39,10 @@ export const SOURCE_TYPE = {
 /**
  * Default source priority (checked in this order)
  */
-export const DEFAULT_PRIORITY = [
+export /**
+        *
+        */
+const DEFAULT_PRIORITY = [
   SOURCE_TYPE.FILENAME,
   SOURCE_TYPE.EXIF,
   SOURCE_TYPE.AUDIO,
@@ -46,11 +52,10 @@ export const DEFAULT_PRIORITY = [
 
 /**
  * Select primary source based on priority order
- *
  * @param {Array} allSources - All available sources
  * @param {string[]} priority - Source priority order
  * @param {boolean} includeAll - Whether to include all sources in result
- * @returns {Object|null} Selected result
+ * @returns {object | null} Selected result
  * @private
  */
 function selectByPriority(allSources, priority, includeAll) {
@@ -82,18 +87,16 @@ function selectByPriority(allSources, priority, includeAll) {
 
 /**
  * Extract timestamp from any available source
- *
  * @param {string} filepath - Full path to file
- * @param {Object} options - Extraction options
+ * @param {object} options - Extraction options
  * @param {string[]} options.sources - Source priority order (default: DEFAULT_PRIORITY)
  * @param {boolean} options.includeAll - Return all sources, not just first match (default: false)
  * @param {boolean} options.includeConfidence - Include confidence scores (default: true)
  * @param {boolean} options.useCache - Use metadata cache (default: true)
  * @param {boolean} options.cacheResults - Store results in cache (default: true)
  * @param {Function} options.onCacheHit - Callback when cache hit: (filepath, cached) => void
- * @param {Object} options.parsingOptions - Options for filename parsing (dateFormat, allowTimeOnly, etc.)
- * @returns {Object|null} - Extraction result or null if no timestamp found
- *
+ * @param {object} options.parsingOptions - Options for filename parsing (dateFormat, allowTimeOnly, etc.)
+ * @returns {object | null} - Extraction result or null if no timestamp found
  * @example
  * const result = await extractTimestamp('photo.jpg');
  * // {
@@ -102,7 +105,6 @@ function selectByPriority(allSources, priority, includeAll) {
  * //   confidence: 0.95,
  * //   details: { ... }
  * // }
- *
  * @example
  * // Get all available sources
  * const result = await extractTimestamp('photo.jpg', { includeAll: true });
@@ -114,14 +116,12 @@ function selectByPriority(allSources, priority, includeAll) {
  * //     { source: 'mtime', timestamp: Date, confidence: 0.50 }
  * //   ]
  * // }
- *
  * @example
  * // Use cache for better performance
  * const result = await extractTimestamp('photo.jpg', {
  *   useCache: true,
  *   onCacheHit: (fp, cached) => console.log('Cache hit!', fp)
  * });
- *
  * @example
  * // Force re-extraction (bypass cache)
  * const fresh = await extractTimestamp('photo.jpg', { useCache: false });
@@ -242,6 +242,8 @@ export async function extractTimestamp(filepath, options = {}) {
 
 /**
  * Extract timestamp from filename
+ * @param basename
+ * @param options
  * @private
  */
 async function extractFromFilename(basename, options) {
@@ -271,6 +273,7 @@ async function extractFromFilename(basename, options) {
 
 /**
  * Extract timestamp from EXIF data
+ * @param filepath
  * @private
  */
 async function extractFromEXIF(filepath) {
@@ -290,6 +293,7 @@ async function extractFromEXIF(filepath) {
 
 /**
  * Extract timestamp from audio metadata
+ * @param filepath
  * @private
  */
 async function extractFromAudio(filepath) {
@@ -309,6 +313,7 @@ async function extractFromAudio(filepath) {
 
 /**
  * Extract timestamp from file birthtime (creation time)
+ * @param filepath
  * @private
  */
 async function extractFromBirthtime(filepath) {
@@ -332,6 +337,7 @@ async function extractFromBirthtime(filepath) {
 
 /**
  * Extract timestamp from file mtime (modification time)
+ * @param filepath
  * @private
  */
 async function extractFromMtime(filepath) {
@@ -355,6 +361,7 @@ async function extractFromMtime(filepath) {
 
 /**
  * Check if file extension is an image format
+ * @param ext
  * @private
  */
 function isImageFile(ext) {
@@ -364,6 +371,7 @@ function isImageFile(ext) {
 
 /**
  * Check if file extension is an audio format
+ * @param ext
  * @private
  */
 function isAudioFile(ext) {
@@ -373,9 +381,8 @@ function isAudioFile(ext) {
 
 /**
  * Batch extract timestamps from multiple files
- *
  * @param {string[]} filepaths - Array of file paths
- * @param {Object} options - Extraction options (same as extractTimestamp)
+ * @param {object} options - Extraction options (same as extractTimestamp)
  * @param {number|'auto'} options.chunkSize - Process N files at a time, or 'auto' for optimal size (default: 'auto')
  * @param {Function} options.onProgress - Progress callback: ({completed, total, percentage, elapsedMs, estimatedRemainingMs, filesPerSecond}) => void
  * @param {boolean} options.yieldBetweenChunks - Yield to event loop between chunks (default: false in Node.js)
@@ -384,7 +391,6 @@ function isAudioFile(ext) {
  * @param {Function} options.priorityFn - Function to determine processing priority: (filepath) => number (higher = first)
  * @param {'fail-fast'|'collect'|'ignore'} options.errorMode - How to handle errors (default: 'collect')
  * @returns {Promise<Array>} - Array of {filepath, result} objects
- *
  * @example
  * const results = await extractTimestampBatch(['photo1.jpg', 'photo2.jpg'], {
  *   chunkSize: 100,
@@ -431,16 +437,10 @@ export async function extractTimestampBatch(filepaths, options = {}) {
 
 /**
  * Compare timestamps from different sources and detect discrepancies
-}
-
-/**
- * Compare timestamps from different sources and detect discrepancies
- *
  * @param {string} filepath - Full path to file
- * @param {Object} options - Comparison options
+ * @param {object} options - Comparison options
  * @param {number} options.thresholdSeconds - Max difference before warning (default: 60)
- * @returns {Promise<Object>} - Comparison result with warnings
- *
+ * @returns {Promise<object>} - Comparison result with warnings
  * @example
  * const comparison = await compareTimestampSources('photo.jpg');
  * if (comparison.hasDiscrepancy) {
@@ -500,10 +500,8 @@ export async function compareTimestampSources(filepath, options = {}) {
 
 /**
  * Get statistics about timestamp sources in a batch of files
- *
  * @param {string[]} filepaths - Array of file paths
- * @returns {Promise<Object>} - Statistics about sources used
- *
+ * @returns {Promise<object>} - Statistics about sources used
  * @example
  * const stats = await getSourceStatistics(['photo1.jpg', 'photo2.jpg', 'song.mp3']);
  * console.log(`EXIF: ${stats.sourceDistribution.exif} files`);
@@ -556,9 +554,8 @@ export async function getSourceStatistics(filepaths) {
 
 /**
  * Suggest best timestamp source for a file
- *
  * @param {string} filepath - Full path to file
- * @returns {Promise<Object>} - Suggestion with reasoning
+ * @returns {Promise<object>} - Suggestion with reasoning
  */
 export async function suggestBestSource(filepath) {
   const result = await extractTimestamp(filepath, {
@@ -600,13 +597,10 @@ export async function suggestBestSource(filepath) {
  * This is useful when user changes the metadata source priority in the UI.
  * Instead of re-extracting metadata from all files (expensive I/O), we just
  * re-sort the cached results based on the new priority.
- *
  * @param {Array} batchResults - Results from extractTimestampBatch()
  * @param {string[]} newPriority - New source priority order
  * @returns {Array} Updated results with new priority applied
- *
  * @throws {TypeError} If batchResults is not an array or newPriority is invalid
- *
  * @example
  * // Original extraction with ALL sources
  * const results = await extractTimestampBatch(files, {
@@ -617,7 +611,6 @@ export async function suggestBestSource(filepath) {
  * // User changes priority in UI - instant update!
  * const updated = reapplyPriority(results, ['exif', 'filename', 'audio']);
  * // No file I/O! Just re-sorts existing results (~0ms for 1000 files)
- *
  * @example
  * // Check if results can be re-prioritized first
  * if (canReapplyPriority(results)) {
@@ -670,10 +663,8 @@ export function reapplyPriority(batchResults, newPriority) {
  *
  * Validates that results have the required structure for reapplyPriority()
  * to work. Results must have been extracted with `includeAll: true`.
- *
  * @param {Array} batchResults - Results to check
  * @returns {boolean} True if reapplyPriority() will work
- *
  * @example
  * if (canReapplyPriority(results)) {
  *   // Safe to call reapplyPriority
@@ -697,16 +688,13 @@ export function canReapplyPriority(batchResults) {
  *
  * Useful for testing, memory management, or forcing re-extraction.
  * Returns statistics about the cache before clearing.
- *
  * @param {string} [filepath] - Optional: clear only this file (all versions)
- * @returns {Object} Cache statistics before clearing
- *
+ * @returns {object} Cache statistics before clearing
  * @example
  * // Clear entire cache
  * const stats = clearMetadataCache();
  * console.log(`Cleared ${stats.size} cached entries`);
  * console.log(`Cache had ${stats.hitRate * 100}% hit rate`);
- *
  * @example
  * // Clear specific file only
  * clearMetadataCache('/path/to/photo.jpg');
@@ -722,13 +710,11 @@ export function clearMetadataCache(filepath = null) {
  *
  * Returns current cache performance metrics. Useful for monitoring
  * and optimization.
- *
- * @returns {Object} Cache statistics
+ * @returns {object} Cache statistics
  * @returns {number} return.hits - Number of cache hits
  * @returns {number} return.misses - Number of cache misses
  * @returns {number} return.size - Current number of cached entries
  * @returns {number} return.hitRate - Cache hit rate (0-1)
- *
  * @example
  * const stats = getMetadataCacheStats();
  * console.log(`Cache size: ${stats.size} entries`);

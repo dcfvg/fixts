@@ -39,7 +39,7 @@ let toolAvailability = null;
 
 /**
  * Check which external metadata tools are available
- * @returns {Promise<Object>} - Object with { exiftool: boolean, mdls: boolean }
+ * @returns {Promise<object>} - Object with { exiftool: boolean, mdls: boolean }
  */
 async function checkToolAvailability() {
   if (toolAvailability !== null) {
@@ -75,12 +75,12 @@ async function checkToolAvailability() {
 
 /**
  * Select the best date from available sources based on preference
- * @param {Array<Object>} dates - Array of date objects with {source, date, timestamp}
+ * @param {Array<object>} dates - Array of date objects with {source, date, timestamp}
  * @param {string} preferredSource - Metadata source preference:
  *   - 'content': Embedded metadata from file content ONLY (EXIF for images, ID3 for audio, etc.) - NO fallback
  *   - 'birthtime': File creation time only - NO fallback
  *   - 'earliest': Earliest date found (embedded metadata OR creation time) - WITH fallback
- * @returns {Object|null} - Selected date object or null
+ * @returns {object | null} - Selected date object or null
  */
 function selectDateByPreference(dates, preferredSource = 'content') {
   if (!dates || dates.length === 0) {
@@ -112,14 +112,13 @@ function selectDateByPreference(dates, preferredSource = 'content') {
  *      - Audio: ID3v2 (MP3), M4A/AAC metadata, OGG/Vorbis comments, WAV RIFF, AIFF
  *
  * Note: Modification time (mtime) is NEVER collected to avoid false dates from file copies/edits
- *
  * @param {string} filePath - Path to the file
- * @param {Object} options - Extraction options
- * @param {string} [options.preferredSource='content'] - Source preference:
+ * @param {object} options - Extraction options
+ * @param {string} [options.preferredSource] - Source preference:
  *   - 'content': Embedded metadata ONLY (EXIF/ID3/etc.) - strict, no fallback
  *   - 'birthtime': Creation time only - strict, no fallback
  *   - 'earliest': Earliest date (embedded metadata OR creation time) - with fallback
- * @returns {Promise<Object|null>} - Object with { source, date, timestamp } or null
+ * @returns {Promise<object | null>} - Object with { source, date, timestamp } or null
  */
 export async function extractDateFromMetadata(filePath, options = {}) {
   const { preferredSource = 'content' } = options;
@@ -171,7 +170,7 @@ function readFileHeader(filePath, maxBytes = 256 * 1024) {
 /**
  * Extract date from file content (EXIF, ID3, etc.)
  * @param {string} filePath - Path to the file
- * @returns {Promise<Object|null>} - Object with { source, date, timestamp } or null
+ * @returns {Promise<object | null>} - Object with { source, date, timestamp } or null
  */
 async function extractContentDate(filePath) {
   const ext = filePath.toLowerCase().split('.').pop();
@@ -242,7 +241,7 @@ async function extractContentDate(filePath) {
  * Try external tools for metadata extraction (exiftool, mdls)
  * @param {string} filePath - Path to the file
  * @param {string} ext - File extension
- * @returns {Promise<Object|null>} - Object with { source, date, timestamp } or null
+ * @returns {Promise<object | null>} - Object with { source, date, timestamp } or null
  */
 async function tryExternalTools(filePath, ext) {
   const imageExts = ['jpg', 'jpeg', 'png', 'tiff', 'tif', 'heic', 'heif', 'raw', 'cr2', 'nef', 'arw'];
@@ -306,13 +305,13 @@ async function tryExternalTools(filePath, ext) {
 /**
  * Extract dates from all files in an array
  * @param {Array<string>} filePaths - Array of file paths
- * @param {Object} options - Extraction options
- * @param {number} [options.concurrency=5] - Number of files to process in parallel
- * @param {string} [options.preferredSource='content'] - Metadata source preference:
+ * @param {object} options - Extraction options
+ * @param {number} [options.concurrency] - Number of files to process in parallel
+ * @param {string} [options.preferredSource] - Metadata source preference:
  *   - 'content': Embedded metadata only (EXIF for images, ID3 for audio, etc.)
  *   - 'birthtime': File creation time only
  *   - 'earliest': Earliest date (embedded metadata OR creation time)
- * @param {Function} [options.onProgress] - Progress callback (current, total)
+ * @param {(current: number, total: number) => void} [options.onProgress] - Progress callback (current, total)
  * @returns {Promise<Map>} - Map of filePath -> metadata object (only files where date was found)
  */
 export async function extractDatesFromFiles(filePaths, options = {}) {
@@ -352,8 +351,9 @@ export async function extractDatesFromFiles(filePaths, options = {}) {
 
 /**
  * Format metadata date to standard format
- * @param {Object} metadata - Metadata object with date
+ * @param {object} metadata - Metadata object with date
  * @param {string} format - Date format template
+ * @param {number|null} timeShiftMs - Time shift in milliseconds to apply to the date
  * @returns {string} - Formatted date string
  */
 export function formatMetadataDate(metadata, format = 'yyyy-mm-dd hh.MM.ss', timeShiftMs = null) {

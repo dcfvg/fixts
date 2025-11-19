@@ -8,7 +8,6 @@
  * Provides intelligent caching of extracted metadata to avoid re-reading files
  * when only the priority order changes. Cache automatically invalidates when
  * files are modified (based on size + mtime).
- *
  * @example
  * import { globalMetadataCache } from './metadataCache.js';
  *
@@ -26,10 +25,12 @@
  * Cache key includes file path, size, and modification time to automatically
  * invalidate when files change. This ensures cache is always fresh without
  * manual invalidation.
- *
  * @class MetadataCache
  */
 export class MetadataCache {
+  /**
+   *
+   */
   constructor() {
     /** @private */
     this.cache = new Map();
@@ -47,9 +48,8 @@ export class MetadataCache {
    *
    * Uses filepath, size, and mtime to detect file changes automatically.
    * If any of these change, the cache key changes and old entry is ignored.
-   *
    * @param {string} filepath - Full path to file
-   * @param {Object} stats - File stats from fs.statSync()
+   * @param {object} stats - File stats from fs.statSync()
    * @param {number} stats.size - File size in bytes
    * @param {number} stats.mtimeMs - Last modified time in milliseconds
    * @returns {string} Cache key
@@ -61,11 +61,9 @@ export class MetadataCache {
 
   /**
    * Get cached metadata for a file
-   *
    * @param {string} filepath - Full path to file
-   * @param {Object} stats - File stats from fs.statSync()
-   * @returns {Object|null} Cached result or null if not found
-   *
+   * @param {object} stats - File stats from fs.statSync()
+   * @returns {object | null} Cached result or null if not found
    * @example
    * const cached = cache.get('/path/to/photo.jpg', stats);
    * if (cached) {
@@ -87,11 +85,9 @@ export class MetadataCache {
 
   /**
    * Store metadata in cache
-   *
    * @param {string} filepath - Full path to file
-   * @param {Object} stats - File stats from fs.statSync()
+   * @param {object} stats - File stats from fs.statSync()
    * @param {Array} allSources - All extracted sources with timestamps
-   *
    * @example
    * cache.set('/path/to/photo.jpg', stats, [
    *   { source: 'exif', timestamp: new Date(), confidence: 0.95 },
@@ -111,9 +107,8 @@ export class MetadataCache {
 
   /**
    * Check if file is cached
-   *
    * @param {string} filepath - Full path to file
-   * @param {Object} stats - File stats from fs.statSync()
+   * @param {object} stats - File stats from fs.statSync()
    * @returns {boolean} True if cached
    */
   has(filepath, stats) {
@@ -123,15 +118,12 @@ export class MetadataCache {
 
   /**
    * Clear entire cache or specific file
-   *
    * @param {string|null} filepath - Optional: clear only this file (all versions)
    * @returns {number} Number of entries cleared
-   *
    * @example
    * // Clear entire cache
    * const cleared = cache.clear();
    * console.log(`Cleared ${cleared} entries`);
-   *
    * @example
    * // Clear specific file (all versions)
    * cache.clear('/path/to/photo.jpg');
@@ -158,14 +150,12 @@ export class MetadataCache {
 
   /**
    * Get cache statistics
-   *
-   * @returns {Object} Statistics object
+   * @returns {object} Statistics object
    * @returns {number} return.hits - Number of cache hits
    * @returns {number} return.misses - Number of cache misses
    * @returns {number} return.evictions - Number of evicted entries
    * @returns {number} return.size - Current cache size
    * @returns {number} return.hitRate - Cache hit rate (0-1)
-   *
    * @example
    * const stats = cache.getStats();
    * console.log(`Hit rate: ${(stats.hitRate * 100).toFixed(1)}%`);
@@ -197,7 +187,6 @@ export class MetadataCache {
 
   /**
    * Get all cached filepaths
-   *
    * @returns {string[]} Array of cached filepaths
    */
   getCachedFiles() {
@@ -214,9 +203,7 @@ export class MetadataCache {
  *
  * Used by extractTimestamp() and related functions when caching is enabled.
  * Can be accessed directly for cache control operations.
- *
  * @type {MetadataCache}
- *
  * @example
  * import { globalMetadataCache } from './metadataCache.js';
  *
@@ -227,4 +214,7 @@ export class MetadataCache {
  * // Clear cache
  * globalMetadataCache.clear();
  */
-export const globalMetadataCache = new MetadataCache();
+export /**
+        *
+        */
+const globalMetadataCache = new MetadataCache();

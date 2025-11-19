@@ -6,7 +6,6 @@
  *
  * Allows users to register custom timestamp patterns for their specific use cases.
  * Patterns are checked before the standard heuristic detection.
- *
  * @module customPatternManager
  */
 
@@ -22,6 +21,10 @@ const customPatterns = [];
  * Pattern validation errors
  */
 export class PatternValidationError extends Error {
+  /**
+   * Create a pattern validation error
+   * @param {string} message - Error message describing the validation failure
+   */
   constructor(message) {
     super(message);
     this.name = 'PatternValidationError';
@@ -30,15 +33,13 @@ export class PatternValidationError extends Error {
 
 /**
  * Register a custom timestamp pattern
- *
- * @param {Object} pattern - Pattern definition
+ * @param {object} pattern - Pattern definition
  * @param {string} pattern.name - Unique name for the pattern
  * @param {RegExp|string} pattern.regex - Regular expression to match
- * @param {Function|Object} pattern.extractor - Function or mapping to extract date components
- * @param {number} [pattern.priority=100] - Priority (lower = checked first, default: 100)
+ * @param {((match: RegExpMatchArray, filename: string) => object) | object} pattern.extractor - Function or mapping to extract date components
+ * @param {number} [pattern.priority] - Priority (lower = checked first, default: 100)
  * @param {string} [pattern.description] - Human-readable description
- * @returns {Object} - Registered pattern object
- *
+ * @returns {object} - Registered pattern object
  * @example
  * // Simple pattern with capture groups
  * registerPattern({
@@ -51,7 +52,6 @@ export class PatternValidationError extends Error {
  *   }),
  *   description: 'Project code format: PRJ20240315-file.txt'
  * });
- *
  * @example
  * // Pattern with named capture groups
  * registerPattern({
@@ -60,7 +60,6 @@ export class PatternValidationError extends Error {
  *   extractor: 'named',  // Use named capture groups
  *   priority: 50
  * });
- *
  * @example
  * // Pattern with mapping object
  * registerPattern({
@@ -130,7 +129,6 @@ export function registerPattern(pattern) {
 
 /**
  * Unregister a custom pattern by name
- *
  * @param {string} name - Pattern name to unregister
  * @returns {boolean} - True if pattern was found and removed
  */
@@ -145,7 +143,6 @@ export function unregisterPattern(name) {
 
 /**
  * Get all registered patterns
- *
  * @returns {Array} - Array of registered patterns (sorted by priority)
  */
 export function getRegisteredPatterns() {
@@ -161,7 +158,6 @@ export function clearPatterns() {
 
 /**
  * Check if a pattern is registered
- *
  * @param {string} name - Pattern name
  * @returns {boolean} - True if pattern exists
  */
@@ -171,9 +167,8 @@ export function hasPattern(name) {
 
 /**
  * Get a specific pattern by name
- *
  * @param {string} name - Pattern name
- * @returns {Object|null} - Pattern object or null if not found
+ * @returns {object | null} - Pattern object or null if not found
  */
 export function getPattern(name) {
   return customPatterns.find(p => p.name === name) || null;
@@ -181,10 +176,9 @@ export function getPattern(name) {
 
 /**
  * Apply custom patterns to a filename
- *
  * @param {string} filename - Filename to parse
- * @param {Object} [_options] - Parsing options (reserved for future use)
- * @returns {Object|null} - Parsed timestamp or null if no match
+ * @param {object} [_options] - Parsing options (reserved for future use)
+ * @returns {object | null} - Parsed timestamp or null if no match
  */
 export function applyCustomPatterns(filename, _options = {}) {
   for (const pattern of customPatterns) {
@@ -219,12 +213,11 @@ export function applyCustomPatterns(filename, _options = {}) {
 
 /**
  * Extract date/time components from regex match
- *
  * @private
  * @param {RegExpMatchArray} match - Regex match result
- * @param {Function|Object|string} extractor - Extraction method
+ * @param {((match: RegExpMatchArray, filename: string) => object) | object | string} extractor - Extraction method
  * @param {string} filename - Original filename (for context)
- * @returns {Object} - Extracted timestamp components
+ * @returns {object} - Extracted timestamp components
  */
 function extractComponents(match, extractor, filename) {
   if (typeof extractor === 'function') {
@@ -252,9 +245,8 @@ function extractComponents(match, extractor, filename) {
 
 /**
  * Determine precision from timestamp components
- *
  * @private
- * @param {Object} timestamp - Timestamp object
+ * @param {object} timestamp - Timestamp object
  * @returns {string} - Precision level
  */
 function determinePrecision(timestamp) {
@@ -276,10 +268,9 @@ function determinePrecision(timestamp) {
 
 /**
  * Convert extracted components to timestamp object
- *
  * @private
- * @param {Object} components - Raw extracted components
- * @returns {Object} - Normalized timestamp object
+ * @param {object} components - Raw extracted components
+ * @returns {object} - Normalized timestamp object
  */
 function convertToTimestamp(components) {
   const timestamp = {};
@@ -324,9 +315,8 @@ function convertToTimestamp(components) {
 
 /**
  * Validate timestamp components
- *
  * @private
- * @param {Object} timestamp - Timestamp to validate
+ * @param {object} timestamp - Timestamp to validate
  * @returns {boolean} - True if valid
  */
 function isValidTimestamp(timestamp) {
@@ -346,7 +336,6 @@ function isValidTimestamp(timestamp) {
 
 /**
  * Export patterns to JSON
- *
  * @returns {string} - JSON string of registered patterns
  */
 export function exportPatterns() {
@@ -366,7 +355,6 @@ export function exportPatterns() {
 
 /**
  * Import patterns from JSON
- *
  * @param {string} json - JSON string of patterns
  * @returns {Array} - Array of imported pattern names
  */

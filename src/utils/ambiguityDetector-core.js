@@ -8,7 +8,6 @@
  * Platform-specific features (like CLI prompts) are in separate modules:
  * - ambiguityDetector.js (Node.js with readline prompts)
  * - ambiguityDetector-browser.js (browser-safe re-export)
- *
  * @module ambiguityDetector-core
  * @browserSafe true
  */
@@ -21,11 +20,10 @@ import { getBestTimestamp } from './heuristicDetector.js';
  * This function identifies dates that COULD be interpreted multiple ways,
  * even if the heuristic has already resolved them based on user preferences.
  * Useful for warnings, user prompts, or analysis.
- *
  * @param {string} filename - Filename to analyze
- * @param {Object} options - Detection options
+ * @param {object} options - Detection options
  * @param {string} options.dateFormat - Date format preference: 'dmy' or 'mdy'
- * @returns {Object|null} - Ambiguity info or null if none detected
+ * @returns {object | null} - Ambiguity info or null if none detected
  */
 export function detectAmbiguity(filename, options = {}) {
   const { dateFormat = 'dmy' } = options;

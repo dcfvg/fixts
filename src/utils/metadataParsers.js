@@ -46,6 +46,8 @@ export function parseEXIFSegment(dataView) {
 
 /**
  * Internal EXIF parser
+ * @param dataView
+ * @param offset
  */
 function parseEXIFSegmentInternal(dataView, offset) {
   try {
@@ -124,7 +126,11 @@ function parseEXIFSegmentInternal(dataView, offset) {
 
 /**
  * Parse a single IFD (Image File Directory) and extract datetime tags
- * @returns {Object} - Object with dateTimeOriginal, dateTimeDigitized, dateTime properties
+ * @param dataView
+ * @param ifdStart
+ * @param littleEndian
+ * @param baseOffset
+ * @returns {object} - Object with dateTimeOriginal, dateTimeDigitized, dateTime properties
  */
 function parseIFDForDates(dataView, ifdStart, littleEndian, baseOffset) {
   const result = {
@@ -163,6 +169,9 @@ function parseIFDForDates(dataView, ifdStart, littleEndian, baseOffset) {
 
 /**
  * Read ASCII string from DataView
+ * @param dataView
+ * @param offset
+ * @param length
  */
 function readASCIIString(dataView, offset, length) {
   let str = '';

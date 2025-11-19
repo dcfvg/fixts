@@ -5,7 +5,6 @@
  *
  * Uses ExifReader for robust, well-tested EXIF parsing across platforms
  * Uses music-metadata for robust, well-tested audio metadata parsing across platforms
- *
  * @module fileMetadataParser
  * @browserSafe false
  * @requires node:fs
@@ -22,7 +21,6 @@ import { logger } from './logger.js';
  * Reads EXIF DateTimeOriginal, DateTime, or DateTimeDigitized tags
  *
  * Priority: DateTimeOriginal > DateTimeDigitized > DateTime
- *
  * @param {string} file - Image file path (Node.js usage - string paths only)
  * @returns {Promise<Date|null>} - Promise resolving to Date or null
  *
@@ -69,7 +67,6 @@ async function parseTimestampFromEXIF(file) {
  * Supports MP3, M4A, OGG, FLAC, WAV, AIFF, and many more formats
  *
  * Priority: common.date > format.creationTime > format.modificationTime > common.year
- *
  * @param {string} file - Audio file path (Node.js usage - string paths only)
  * @returns {Promise<Date|null>} - Promise resolving to Date or null
  *

@@ -21,11 +21,10 @@ import { detectTimestampHeuristic } from './heuristicDetector.js';
  * 3. Look for "proof" dates where day > 12 (unambiguous)
  * 4. Check consistency across the batch
  * 5. Return recommendation with confidence score
- *
  * @param {string[]} filenames - Array of filenames (can include paths)
- * @param {Object} options - Analysis options
+ * @param {object} options - Analysis options
  * @param {string} options.currentDirectory - If provided, prioritize files from this directory
- * @returns {Object} - Analysis result with recommendation
+ * @returns {object} - Analysis result with recommendation
  */
 export function analyzeContextualFormat(filenames, options = {}) {
   const { currentDirectory } = options;
@@ -179,12 +178,11 @@ export function analyzeContextualFormat(filenames, options = {}) {
 
 /**
  * Resolve ambiguous dates across a batch using contextual analysis
- *
- * @param {Object|string[]} analysisOrFilenames - Analysis result from analyzeContextualFormat() or array of filenames
- * @param {Object} options - Resolution options
+ * @param {object | string[]} analysisOrFilenames - Analysis result from analyzeContextualFormat() or array of filenames
+ * @param {object} options - Resolution options
  * @param {string} options.defaultFormat - Default if no context ('dmy' or 'mdy')
  * @param {number} options.threshold - Minimum confidence to auto-apply (0.7)
- * @returns {Object} - Resolution result
+ * @returns {object} - Resolution result
  */
 export function resolveAmbiguitiesByContext(analysisOrFilenames, options = {}) {
   const {
@@ -224,10 +222,9 @@ export function resolveAmbiguitiesByContext(analysisOrFilenames, options = {}) {
  *
  * This is a convenience function that analyzes the batch and returns
  * parsing options that can be passed to parseTimestamp functions.
- *
  * @param {string[]} filenames - Array of filenames to analyze
- * @param {Object} options - Analysis options
- * @returns {Object} - Parsing options with recommended dateFormat
+ * @param {object} options - Analysis options
+ * @returns {object} - Parsing options with recommended dateFormat
  */
 export function getContextualParsingOptions(filenames, options = {}) {
   const resolution = resolveAmbiguitiesByContext(filenames, options);
@@ -242,7 +239,6 @@ export function getContextualParsingOptions(filenames, options = {}) {
 
 /**
  * Check if a batch has ambiguous dates that need resolution
- *
  * @param {string[]} filenames - Array of filenames
  * @returns {boolean} - True if there are ambiguous dates
  */
@@ -257,9 +253,8 @@ export function hasAmbiguousDates(filenames) {
 
 /**
  * Get a summary report of date formats in a batch
- *
- * @param {Object|string[]} analysisOrFilenames - Analysis result from analyzeContextualFormat() or array of filenames
- * @returns {Object} - Summary report
+ * @param {object | string[]} analysisOrFilenames - Analysis result from analyzeContextualFormat() or array of filenames
+ * @returns {object} - Summary report
  */
 export function getFormatSummary(analysisOrFilenames) {
   // Support both analysis object and filenames array

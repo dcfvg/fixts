@@ -40,8 +40,8 @@ export function getDaysInMonth(month, year) {
 /**
  * Validate a year value
  * @param {number} year - Year to validate
- * @param {Object} options - Validation options
- * @param {boolean} [options.allowTwoDigit=true] - Allow 2-digit years (00-99)
+ * @param {object} options - Validation options
+ * @param {boolean} [options.allowTwoDigit] - Allow 2-digit years (00-99)
  * @returns {boolean} - True if valid
  */
 export function isValidYear(year, options = {}) {
@@ -141,8 +141,8 @@ export function isValidSeconds(seconds) {
  * @param {number} year - Year
  * @param {number} month - Month (1-12)
  * @param {number} day - Day (1-31)
- * @param {Object} options - Validation options
- * @param {boolean} [options.allowTwoDigitYear=true] - Allow 2-digit years
+ * @param {object} options - Validation options
+ * @param {boolean} [options.allowTwoDigitYear] - Allow 2-digit years
  * @returns {boolean} - True if valid date
  */
 export function isValidDate(year, month, day, options = {}) {
@@ -173,7 +173,7 @@ export function isValidDate(year, month, day, options = {}) {
  * @param {number} hours - Hours (0-23)
  * @param {number} minutes - Minutes (0-59)
  * @param {number} seconds - Seconds (0-59)
- * @param {Object} options - Validation options
+ * @param {object} options - Validation options
  * @returns {boolean} - True if valid date-time
  */
 export function isValidDateTime(year, month, day, hours, minutes, seconds, options = {}) {
@@ -234,7 +234,10 @@ export function isAmbiguousDate(first, second) {
 /**
  * Batch validation object for common validation needs
  */
-export const validators = {
+export /**
+        *
+        */
+const validators = {
   year: isValidYear,
   month: isValidMonth,
   day: isValidDay,

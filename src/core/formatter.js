@@ -15,7 +15,7 @@ import { getBestTimestamp } from '../utils/heuristicDetector.js';
  * Format a date according to the given template, only including defined components
  * @param {Date} date - The date to format
  * @param {string} template - Format template (e.g., "yyyy-mm-dd hh.MM.ss")
- * @param {Object} definedComponents - Which components are defined in the original
+ * @param {object} definedComponents - Which components are defined in the original
  * @returns {string} - Formatted date string
  */
 export function formatDate(date, template = 'yyyy-mm-dd hh.MM.ss', definedComponents = {}) {
@@ -71,8 +71,8 @@ export function formatDate(date, template = 'yyyy-mm-dd hh.MM.ss', definedCompon
  * Extract timestamp from filename and format it
  * @param {string} filename - Original filename
  * @param {string} template - Format template
- * @param {Object} options - Parsing options (e.g., { dateFormat: 'dmy', timeShiftMs: number })
- * @returns {Object|null} - { timestamp: Date, formatted: string, definedComponents: Object } or null
+ * @param {object} options - Parsing options (e.g., { dateFormat: 'dmy', timeShiftMs: number })
+ * @returns {object | null} - { timestamp: Date, formatted: string, definedComponents: Object } or null
  */
 export function extractAndFormat(filename, template = 'yyyy-mm-dd hh.MM.ss', options = {}) {
   const timestamp = parseTimestampFromName(filename, options);
@@ -102,7 +102,7 @@ export function extractAndFormat(filename, template = 'yyyy-mm-dd hh.MM.ss', opt
  * Detect which date/time components are defined in the filename
  * Uses the actual heuristic detector to determine precision instead of regex patterns
  * @param {string} filename - Filename to analyze
- * @returns {Object} - Object indicating which components are present
+ * @returns {object} - Object indicating which components are present
  */
 function detectDefinedComponents(filename) {
   // Use the actual heuristic detector to get accurate component information
@@ -135,7 +135,7 @@ function detectDefinedComponents(filename) {
 /**
  * Extract file extension from filename
  * @param {string} filename - Filename to process
- * @returns {Object} - { nameWithoutExt: string, extension: string }
+ * @returns {object} - { nameWithoutExt: string, extension: string }
  */
 function splitExtension(filename) {
   const extensionMatch = filename.match(FILE_EXTENSIONS.PATTERN);
@@ -149,8 +149,8 @@ function splitExtension(filename) {
 
 /**
  * Check if two timestamps represent the same date (ignoring time)
- * @param {Object} ts1 - First timestamp object
- * @param {Object} ts2 - Second timestamp object
+ * @param {object} ts1 - First timestamp object
+ * @param {object} ts2 - Second timestamp object
  * @returns {boolean} - True if they represent the same date
  */
 function isSameDate(ts1, ts2) {
@@ -162,7 +162,7 @@ function isSameDate(ts1, ts2) {
  * Uses heuristic detection to identify and remove timestamps
  * Also removes redundant timestamps that represent the same date
  * @param {string} filename - Filename without extension
- * @param {Object} primaryTimestamp - The primary timestamp object (optional, for redundancy checking)
+ * @param {object} primaryTimestamp - The primary timestamp object (optional, for redundancy checking)
  * @returns {string} - Cleaned filename
  */
 function removeTimestampPatterns(filename, primaryTimestamp = null) {
@@ -237,7 +237,7 @@ function buildFinalName(formattedDate, cleanedName, extension) {
  * Generate new filename with formatted timestamp
  * @param {string} originalName - Original filename or folder name
  * @param {string} template - Format template
- * @param {Object} options - Parsing options (e.g., { dateFormat: 'dmy' or 'mdy' })
+ * @param {object} options - Parsing options (e.g., { dateFormat: 'dmy' or 'mdy' })
  * @returns {string|null} - New name or null if no timestamp found
  */
 export function generateNewName(originalName, template = 'yyyy-mm-dd hh.MM.ss', options = {}) {

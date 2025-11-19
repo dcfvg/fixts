@@ -25,6 +25,11 @@ import { logger } from '../utils/logger.js';
 import { loadConfig, mergeConfig, validateConfig } from '../config/configLoader.js';
 
 // Parse command line arguments
+/**
+ * Parse command line arguments into options object
+ * @param {Array<string>} args - Array of command line arguments
+ * @returns {object} Parsed configuration object with all CLI options
+ */
 function parseArgs(args) {
   const cliArgs = {
     path: null,
@@ -179,6 +184,9 @@ function parseArgs(args) {
 }
 
 // Display help message
+/**
+ *
+ */
 function displayHelp() {
   logger.info(`
 fixts - Normalize filenames and folders with timestamps
@@ -388,7 +396,7 @@ function displayResultsTable(results, showSource = false, copyMode = false) {
 /**
  * Interactive workflow with pattern analysis and step-by-step confirmation
  * @param {string} targetPath - Path to directory to process
- * @param {Object} options - CLI options
+ * @param {object} options - CLI options
  */
 async function interactiveWorkflow(targetPath, options) {
   logger.info('\n🔍 Step 1: Scanning directory...\n');
@@ -642,6 +650,9 @@ async function interactiveWorkflow(targetPath, options) {
 }
 
 // Main function
+/**
+ *
+ */
 async function main() {
   const cliArgs = parseArgs(process.argv);
 

@@ -9,7 +9,10 @@
 /**
  * Log levels
  */
-export const LogLevel = {
+export /**
+        *
+        */
+const LogLevel = {
   ERROR: 'error',
   WARN: 'warn',
   INFO: 'info',
@@ -78,7 +81,10 @@ function formatMessage(level, message, context) {
 /**
  * Logger instance
  */
-export const logger = {
+export /**
+        *
+        */
+const logger = {
   /**
    * Log error message
    * @param {string} message - Error message
@@ -125,7 +131,7 @@ export const logger = {
 
   /**
    * Configure logger
-   * @param {Object} options - Configuration options
+   * @param {object} options - Configuration options
    * @param {string} options.level - Log level
    * @param {boolean} options.silent - Silent mode
    * @param {boolean} options.timestamp - Include timestamp

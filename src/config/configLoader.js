@@ -11,7 +11,6 @@
  * 3. .fixtsrc.json (current directory)
  * 4. ~/.fixtsrc (user home directory)
  * 5. ~/.config/fixts/config.json (XDG config directory)
- *
  * @example
  * // .fixtsrc.json example:
  * {
@@ -33,9 +32,8 @@ import { logger } from '../utils/logger.js';
 /**
  * Load configuration from file
  * Searches multiple locations in order of precedence
- *
  * @param {string|null} customPath - Custom config file path (highest priority)
- * @returns {Object} - Configuration object (empty if no config found)
+ * @returns {object} - Configuration object (empty if no config found)
  */
 export function loadConfig(customPath = null) {
   const configPaths = customPath ? [customPath] : [
@@ -67,11 +65,10 @@ export function loadConfig(customPath = null) {
 /**
  * Merge configuration sources with proper precedence
  * Priority (highest to lowest): CLI args > config file > defaults
- *
- * @param {Object} defaults - Default configuration values
- * @param {Object} configFile - Configuration from file
- * @param {Object} cliArgs - Configuration from CLI arguments
- * @returns {Object} - Merged configuration
+ * @param {object} defaults - Default configuration values
+ * @param {object} configFile - Configuration from file
+ * @param {object} cliArgs - Configuration from CLI arguments
+ * @returns {object} - Merged configuration
  */
 export function mergeConfig(defaults, configFile, cliArgs) {
   // Start with defaults
@@ -97,9 +94,8 @@ export function mergeConfig(defaults, configFile, cliArgs) {
 
 /**
  * Validate configuration values
- *
- * @param {Object} config - Configuration to validate
- * @returns {Object} - { valid: boolean, errors: string[] }
+ * @param {object} config - Configuration to validate
+ * @returns {object} - { valid: boolean, errors: string[] }
  */
 export function validateConfig(config) {
   const errors = [];

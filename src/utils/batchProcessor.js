@@ -17,9 +17,8 @@ import { processInChunks } from './batchProgressHelper.js';
 
 /**
  * Parse timestamps from multiple filenames efficiently
- *
  * @param {string[]} filenames - Array of filenames to parse
- * @param {Object} options - Parsing options
+ * @param {object} options - Parsing options
  * @param {string} options.dateFormat - Date format preference: 'dmy' or 'mdy'
  * @param {boolean} options.allowTimeOnly - Allow time-only formats
  * @param {boolean} options.includeConfidence - Include confidence scores (default: true)
@@ -31,7 +30,7 @@ import { processInChunks } from './batchProgressHelper.js';
  * @param {AbortSignal} options.abortSignal - Signal to abort processing
  * @param {Function} options.priorityFn - Function to determine processing priority: (filename) => number (higher = first)
  * @param {'fail-fast'|'collect'|'ignore'} options.errorMode - How to handle errors (default: 'collect')
- * @returns {Promise<Array<Object>>} - Array of results with {filename, timestamp, date, confidence}
+ * @returns {Promise<Array<object>>} - Array of results with {filename, timestamp, date, confidence}
  */
 export async function parseTimestampBatch(filenames, options = {}) {
   const {
@@ -53,7 +52,7 @@ export async function parseTimestampBatch(filenames, options = {}) {
   /**
    * Process a single filename
    * @param {string} filename - Filename to process
-   * @returns {Object} - Result object
+   * @returns {object} - Result object
    */
   const processFilename = (filename) => {
     // Try to use cached pattern knowledge for similar filenames
@@ -139,9 +138,9 @@ function getCacheKey(filename) {
 /**
  * Try to parse using cached pattern knowledge
  * @param {string} _filename - Filename to parse
- * @param {Object} _cached - Cached pattern information
- * @param {Object} _options - Parsing options
- * @returns {Object|null} - Timestamp object or null for fallback
+ * @param {object} _cached - Cached pattern information
+ * @param {object} _options - Parsing options
+ * @returns {object | null} - Timestamp object or null for fallback
  * @private
  */
 function tryWithCachedPattern(_filename, _cached, _options) {
@@ -154,7 +153,7 @@ function tryWithCachedPattern(_filename, _cached, _options) {
  * Update pattern cache with observed timestamp
  * @param {Map} cache - Pattern cache map
  * @param {string} key - Cache key
- * @param {Object} timestamp - Timestamp object to cache
+ * @param {object} timestamp - Timestamp object to cache
  * @private
  */
 function updatePatternCache(cache, key, timestamp) {
@@ -174,10 +173,9 @@ function updatePatternCache(cache, key, timestamp) {
 /**
  * Parse timestamps and group by detection confidence
  * Useful for identifying files that need manual review
- *
  * @param {string[]} filenames - Array of filenames
- * @param {Object} options - Parsing options
- * @returns {Promise<Object>} - {high: [], medium: [], low: [], none: []}
+ * @param {object} options - Parsing options
+ * @returns {Promise<object>} - {high: [], medium: [], low: [], none: []}
  */
 export async function parseAndGroupByConfidence(filenames, options = {}) {
   const results = await parseTimestampBatch(filenames, options);
@@ -209,10 +207,9 @@ export async function parseAndGroupByConfidence(filenames, options = {}) {
 
 /**
  * Get batch processing statistics
- *
  * @param {string[]} filenames - Array of filenames
- * @param {Object} options - Parsing options
- * @returns {Promise<Object>} - Statistics about the batch
+ * @param {object} options - Parsing options
+ * @returns {Promise<object>} - Statistics about the batch
  */
 export async function getBatchStats(filenames, options = {}) {
   const results = await parseTimestampBatch(filenames, options);
@@ -264,10 +261,9 @@ export async function getBatchStats(filenames, options = {}) {
 
 /**
  * Filter filenames by whether they have detectable timestamps
- *
  * @param {string[]} filenames - Array of filenames
- * @param {Object} options - Parsing options
- * @returns {Promise<Object>} - {withTimestamp: [], withoutTimestamp: []}
+ * @param {object} options - Parsing options
+ * @returns {Promise<object>} - {withTimestamp: [], withoutTimestamp: []}
  */
 export async function filterByTimestamp(filenames, options = {}) {
   const results = await parseTimestampBatch(filenames, options);

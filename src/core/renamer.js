@@ -87,7 +87,7 @@ function renamePreservingTimestamps(oldPath, newPath) {
 
 /**
  * Create a revert script to undo renaming operations
- * @param {Array<Object>} results - Array of rename results
+ * @param {Array<object>} results - Array of rename results
  * @param {string} targetPath - Base directory path
  * @returns {string} - Path to the created revert script
  */
@@ -205,13 +205,13 @@ function createRevertScript(results, targetPath) {
  * Process a file or directory path and return results without ambiguity handling
  * Used for both files and directories, supports recursive processing
  * @param {string} path - Path to file or directory to process
- * @param {Object} options - Configuration options
- * @param {string} [options.format='yyyy-mm-dd hh.MM.ss'] - Date format template
- * @param {boolean} [options.dryRun=true] - If true, simulate without actual changes
- * @param {boolean} [options.execute=false] - If true, perform actual operations
- * @param {boolean} [options.copy=false] - If true, copy instead of rename
+ * @param {object} options - Configuration options
+ * @param {string} [options.format] - Date format template
+ * @param {boolean} [options.dryRun] - If true, simulate without actual changes
+ * @param {boolean} [options.execute] - If true, perform actual operations
+ * @param {boolean} [options.copy] - If true, copy instead of rename
  * @param {string} [options.resolution] - Ambiguity resolution ('dmy', 'mdy', or 'skip')
- * @returns {Array<Object>} - Array of result objects with oldName, newName, oldPath, newPath
+ * @returns {Array<object>} - Array of result objects with oldName, newName, oldPath, newPath
  */
 export function processPath(path, options = {}) {
   const { format, dryRun = false, method, dateFormat, timeShiftMs } = options;
@@ -275,10 +275,10 @@ export function processPath(path, options = {}) {
 /**
  * Process a single file or directory (internal function)
  * @param {string} itemPath - Path to file or directory
- * @param {Object} options - Options
+ * @param {object} options - Options
  * @param {string|null} targetDir - Target directory for copy mode (null for rename mode)
  * @param {string|null} basePath - Base path to preserve relative structure in copy mode
- * @returns {Object|null} - Result object with oldName, newName, error, or null if no change
+ * @returns {object | null} - Result object with oldName, newName, error, or null if no change
  */
 function processItemBase(itemPath, options, targetDir = null, basePath = null) {
   const { format, dryRun, execute, resolution, method, timeShiftMs, cachedNewName, copyFlat } = options;
@@ -370,13 +370,20 @@ function processItemBase(itemPath, options, targetDir = null, basePath = null) {
 /**
  * Process a single file or directory in rename mode
  * @param {string} path - Path to file or directory
- * @param {Object} options - Options
- * @returns {Object|null} - Result object or null if no change
+ * @param {object} options - Options
+ * @returns {object | null} - Result object or null if no change
  */
 function processItem(path, options) {
   return processItemBase(path, options, null);
 }
 
+/**
+ * Get resolution for a given path from the resolutions map
+ * @param {Map} resolutions - Map of path/filename to resolution choices
+ * @param {string} fullPath - Full path to the file
+ * @param {string} fallbackName - Fallback name (basename) if full path not found
+ * @returns {object|undefined} Resolution object or undefined if not found
+ */
 function getResolutionForPath(resolutions, fullPath, fallbackName) {
   return resolutions.get(fullPath) ?? resolutions.get(fallbackName);
 }
@@ -427,8 +434,8 @@ function copyRecursive(source, destination) {
  * @param {string} path - Path to file or directory
  * @param {string} timedDir - Path to timed directory
  * @param {string} basePath - Base path to preserve relative structure
- * @param {Object} options - Options
- * @returns {Object|null} - Result object or null if no change
+ * @param {object} options - Options
+ * @returns {object | null} - Result object or null if no change
  */
 function processItemWithCopy(path, timedDir, basePath, options) {
   return processItemBase(path, options, timedDir, basePath);
@@ -438,25 +445,25 @@ function processItemWithCopy(path, timedDir, basePath, options) {
  * Recursively find all files and directories with timestamps
  * @param {string} dirPath - Directory path
  * @param {string} format - Target format
- * @param {Object} parsingOptions - Options for timestamp parsing
+ * @param {object} parsingOptions - Options for timestamp parsing
  * @param {Array<string>} includeExt - Extensions/types to include (use 'dir' keyword for directories)
  * @param {Array<string>} excludeExt - Extensions/types to exclude (use 'dir' keyword for directories)
  * @param {Array<string>} excludeDir - DEPRECATED: Use excludeExt with 'dir' keyword instead
  * @param {number} maxDepth - Maximum recursion depth (Infinity = unlimited)
  * @param {number} currentDepth - Current recursion depth (internal)
- * @returns {Object} - { toRename: Array<{path, newName}>, alreadyFormatted: Array<string>, withoutTimestamp: Array<string> }
+ * @returns {object} - { toRename: Array<{path, newName}>, alreadyFormatted: Array<string>, withoutTimestamp: Array<string> }
  */
 /**
  * Find all items with timestamps in directory (optimized with batch processing)
  * @param {string} dirPath - Directory path to scan
  * @param {string} format - Target format template
- * @param {Object} parsingOptions - Parsing options
+ * @param {object} parsingOptions - Parsing options
  * @param {Array<string>} includeExt - Extensions to include
  * @param {Array<string>} excludeExt - Extensions to exclude
  * @param {Array<string>} excludeDir - Directories to exclude
  * @param {number} maxDepth - Maximum recursion depth
  * @param {number} currentDepth - Current recursion depth
- * @returns {Promise<Object>} - { toRename: Array<{path, newName}>, alreadyFormatted: Array<string>, withoutTimestamp: Array<string> }
+ * @returns {Promise<object>} - { toRename: Array<{path, newName}>, alreadyFormatted: Array<string>, withoutTimestamp: Array<string> }
  */
 async function findItemsWithTimestamps(dirPath, format = 'yyyy-mm-dd hh.MM.ss', parsingOptions = {}, includeExt = [], excludeExt = [], excludeDir = [], maxDepth = 1, currentDepth = 1) {
   const toRename = [];
@@ -603,12 +610,12 @@ async function findItemsWithTimestamps(dirPath, format = 'yyyy-mm-dd hh.MM.ss', 
  * Discover all items (files/directories) to process
  * @param {string} targetPath - Path to analyze
  * @param {string} format - Target format
- * @param {Object} parsingOptions - Options for timestamp parsing
+ * @param {object} parsingOptions - Options for timestamp parsing
  * @param {Array<string>} includeExt - Extensions/types to include (use 'dir' keyword for directories)
  * @param {Array<string>} excludeExt - Extensions/types to exclude (use 'dir' keyword for directories)
  * @param {Array<string>} excludeDir - DEPRECATED: Use excludeExt with 'dir' keyword instead
  * @param {number} maxDepth - Maximum recursion depth
- * @returns {Promise<Object>} - { toRename: Array<{path, newName, oldName}>, alreadyFormatted: Array<string>, withoutTimestamp: Array<string> }
+ * @returns {Promise<object>} - { toRename: Array<{path, newName, oldName}>, alreadyFormatted: Array<string>, withoutTimestamp: Array<string> }
  */
 async function discoverItems(targetPath, format = 'yyyy-mm-dd hh.MM.ss', parsingOptions = {}, includeExt = [], excludeExt = [], excludeDir = [], maxDepth = 1) {
   const stats = lstatSync(targetPath);
@@ -649,7 +656,7 @@ async function discoverItems(targetPath, format = 'yyyy-mm-dd hh.MM.ss', parsing
 /**
  * Group items by ambiguity status
  * @param {Array<{path, newName, oldName}>} items - Array of item objects
- * @returns {Object} - { ambiguous: Array, unambiguous: Array }
+ * @returns {object} - { ambiguous: Array, unambiguous: Array }
  */
 function groupByAmbiguity(items) {
   const ambiguous = [];
@@ -676,9 +683,8 @@ function groupByAmbiguity(items) {
 
 /**
  * Resolve all ambiguities interactively if needed
- * @param {Array<Object>} ambiguousFiles - Array of files with ambiguities
- * @param {boolean} dryRun - Dry run mode
- * @param {Object} presetResolutions - Preset ambiguity resolutions
+ * @param {Array<object>} ambiguousFiles - Array of files with ambiguities
+ * @param {object} presetResolutions - Preset ambiguity resolutions
  * @returns {Promise<Map>} - Map of filename -> resolution
  */
 async function resolveAllAmbiguities(ambiguousFiles, presetResolutions = {}) {
@@ -700,8 +706,8 @@ async function resolveAllAmbiguities(ambiguousFiles, presetResolutions = {}) {
  * @param {Array<{path, newName, oldName}>} items - Items to process
  * @param {string} targetPath - Base path
  * @param {Map} resolutions - Ambiguity resolutions
- * @param {Object} options - Processing options
- * @returns {Array<Object>} - Processing results
+ * @param {object} options - Processing options
+ * @returns {Array<object>} - Processing results
  */
 function processItemsInCopyMode(items, targetPath, resolutions, options) {
   const { format, dryRun, execute, timeShiftMs, copyFlat } = options;
@@ -746,8 +752,8 @@ function processItemsInCopyMode(items, targetPath, resolutions, options) {
  * Process items in rename mode
  * @param {Array<{path, newName, oldName}>} items - Items to process
  * @param {Map} resolutions - Ambiguity resolutions
- * @param {Object} options - Processing options
- * @returns {Array<Object>} - Processing results
+ * @param {object} options - Processing options
+ * @returns {Array<object>} - Processing results
  */
 function processItemsInRenameMode(items, resolutions, options) {
   const { format, dryRun, execute, timeShiftMs } = options;
@@ -790,8 +796,8 @@ function processItemsInRenameMode(items, resolutions, options) {
  * Process a single file (not a directory)
  * @param {string} filePath - File path
  * @param {Map} resolutions - Ambiguity resolutions
- * @param {Object} options - Processing options
- * @returns {Object|null} - Processing result or null
+ * @param {object} options - Processing options
+ * @returns {object | null} - Processing result or null
  */
 function processSingleFile(filePath, resolutions, options) {
   const { format, dryRun, execute, copy, timeShiftMs } = options;
@@ -824,7 +830,7 @@ function processSingleFile(filePath, resolutions, options) {
 
 /**
  * Generate helpful message for skipped ambiguous file
- * @param {Object} ambiguity - Ambiguity object from detectAmbiguity
+ * @param {object} ambiguity - Ambiguity object from detectAmbiguity
  * @returns {string} - Helpful message with resolution command
  */
 function generateAmbiguityMessage(ambiguity) {
@@ -840,17 +846,17 @@ function generateAmbiguityMessage(ambiguity) {
  * Main rename function - renames files/directories based on embedded timestamps
  * Supports both rename and copy modes, with interactive ambiguity resolution
  * @param {string} targetPath - Path to file or directory to process
- * @param {Object} options - Configuration options
- * @param {string} [options.format='yyyy-mm-dd hh.MM.ss'] - Date format template
- * @param {boolean} [options.copy=false] - If true, copy instead of rename
- * @param {boolean} [options.dryRun=true] - If true, simulate without actual changes
- * @param {boolean} [options.execute=false] - If true, perform actual operations
- * @param {boolean} [options.interactive=false] - If true, prompt for ambiguities
- * @param {Array<string>} [options.includeExt=[]] - Extensions to include
- * @param {Array<string>} [options.excludeExt=[]] - Extensions to exclude
- * @param {Array<string>} [options.excludeDir=[]] - Directory names to exclude
- * @param {number} [options.depth=1] - Maximum recursion depth (1 = root only)
- * @returns {Promise<Object>} - Object with { results: Array<Object>, alreadyFormatted: number, noTimestamp: boolean, withoutTimestamp: number, skippedAmbiguous: Array<Object> }
+ * @param {object} options - Configuration options
+ * @param {string} [options.format] - Date format template
+ * @param {boolean} [options.copy] - If true, copy instead of rename
+ * @param {boolean} [options.dryRun] - If true, simulate without actual changes
+ * @param {boolean} [options.execute] - If true, perform actual operations
+ * @param {boolean} [options.interactive] - If true, prompt for ambiguities
+ * @param {Array<string>} [options.includeExt] - Extensions to include
+ * @param {Array<string>} [options.excludeExt] - Extensions to exclude
+ * @param {Array<string>} [options.excludeDir] - Directory names to exclude
+ * @param {number} [options.depth] - Maximum recursion depth (1 = root only)
+ * @returns {Promise<object>} - Object with { results: Array<Object>, alreadyFormatted: number, noTimestamp: boolean, withoutTimestamp: number, skippedAmbiguous: Array<Object> }
  */
 export async function rename(targetPath, options = {}) {
   // Merge with defaults for robust programmatic use
@@ -1032,6 +1038,8 @@ export async function rename(targetPath, options = {}) {
 /**
  * Recursively find all files (not directories) without timestamps
  * @param {string} dirPath - Directory path
+ * @param {object} options - Search options (includeExt, excludeExt, excludeDir, maxDepth)
+ * @param {number} currentDepth - Current recursion depth level
  * @returns {Array<string>} - Array of file paths without timestamps
  */
 function findFilesWithoutTimestamps(dirPath, options = {}, currentDepth = 1) {
@@ -1127,6 +1135,7 @@ function findFilesWithoutTimestamps(dirPath, options = {}, currentDepth = 1) {
 /**
  * Discover files without timestamps
  * @param {string} targetPath - Path to file or directory
+ * @param {object} options - Discovery options (includeExt, excludeExt, excludeDir, depth)
  * @returns {Array<string>} - Array of file paths without timestamps
  */
 function discoverFilesWithoutTimestamps(targetPath, options = {}) {
@@ -1172,13 +1181,13 @@ function discoverFilesWithoutTimestamps(targetPath, options = {}) {
 /**
  * Rename files using metadata (mtime, EXIF, etc.)
  * @param {string} targetPath - Path to file or directory
- * @param {Object} options - Configuration options
- * @param {string} [options.format='yyyy-mm-dd hh.MM.ss'] - Date format template
- * @param {boolean} [options.dryRun=true] - If true, simulate without actual changes
- * @param {boolean} [options.execute=false] - If true, perform actual operations
- * @param {string} [options.metadataSource='earliest'] - Metadata source preference
- * @param {Function} [options.onProgress] - Progress callback (current, total)
- * @returns {Promise<Object>} - Object with { results: Array<Object>, filesScanned: number, datesFound: number }
+ * @param {object} options - Configuration options
+ * @param {string} [options.format] - Date format template
+ * @param {boolean} [options.dryRun] - If true, simulate without actual changes
+ * @param {boolean} [options.execute] - If true, perform actual operations
+ * @param {string} [options.metadataSource] - Metadata source preference
+ * @param {(current: number, total: number) => void} [options.onProgress] - Progress callback (current, total)
+ * @returns {Promise<object>} - Object with { results: Array<Object>, filesScanned: number, datesFound: number }
  */
 export async function renameUsingMetadata(targetPath, options = {}) {
   // Merge with defaults for robust programmatic use

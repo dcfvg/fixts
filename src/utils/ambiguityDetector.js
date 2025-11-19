@@ -4,7 +4,6 @@
  *
  * This module provides interactive ambiguity resolution using Node.js readline.
  * For browser-safe ambiguity detection, use ambiguityDetector-browser.js
- *
  * @module ambiguityDetector
  * @browserSafe false
  * @requires readline
@@ -19,7 +18,7 @@ export { detectAmbiguity };
 
 /**
  * Prompt user to resolve ambiguity
- * @param {Object} ambiguity - Ambiguity info from detectAmbiguity
+ * @param {object} ambiguity - Ambiguity info from detectAmbiguity
  * @returns {Promise<string>} - User's choice
  */
 export async function promptAmbiguityResolution(ambiguity) {
@@ -65,9 +64,8 @@ export async function promptAmbiguityResolution(ambiguity) {
 /**
  * Batch process ambiguities for multiple files
  * In interactive mode, prompts once per ambiguity type and applies to all similar files
- * @param {Array<string|{name?: string, path?: string, filename?: string}>} filenames - List of filenames (or objects with name/path)
- * @param {Object} presetResolutions - Optional preset resolutions {dateFormat: 'dd-mm-yyyy'|'mm-dd-yyyy', century: '2000s'|'1900s'}
- * @returns {Promise<Object>} - Map of identifier -> resolution choice (paths when provided)
+ * @param {Array<string|{name?: string, path?: string, filename?: string}>} items - List of filenames (or objects with name/path)
+ * @returns {Promise<object>} - Map of identifier -> resolution choice (paths when provided)
  */
 function normalizeAmbiguityInputs(items) {
   return items.map((item, index) => {
@@ -90,6 +88,12 @@ function normalizeAmbiguityInputs(items) {
   });
 }
 
+/**
+ * Resolve ambiguities for multiple files interactively
+ * @param {Array<string|object>} filenames - List of filenames or file objects
+ * @param {object} presetResolutions - Optional preset resolutions
+ * @returns {Promise<Map>} Map of filename/path to resolution choices
+ */
 export async function resolveAmbiguities(filenames, presetResolutions = {}) {
   const resolutions = new Map();
   const ambiguitiesByType = new Map(); // Group ambiguities by type
