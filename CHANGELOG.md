@@ -5,15 +5,56 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.2.0] - 2025-11-08
+## [1.4.0] - 2025-11-19
 
 ### Summary
 
-Major performance release with metadata caching (500x faster priority changes) and progressive batch processing capabilities for handling thousands of files without UI freezing.
+Safer defaults and metadata workflows, smarter timestamp detection (with timezone/epoch handling and fewer false positives), and cleaner filenames through better redundancy trimming and ID de-duplication.
 
 ---
 
 ### Added
+
+- Timezone-aware timestamp detection (Z/offsets), Unix epoch (ms/us) parsing, and month-name support across locales, with new tests for ISO variants and compact datetimes.
+- Metadata workflows now support copy/flat modes plus include/exclude/depth filters, and they create revert scripts when executing (match rename mode behavior).
+- New public type declarations (`types.d.ts`) and custom error classes (`FixtsError`, `TimestampNotFoundError`, `FileAccessError`, `AmbiguityError`) for clearer programmatic use.
+
+### Changed
+
+- Default recursion depth is now 1 (root only); `--depth Infinity` restores unlimited traversal. Symlinked directories are skipped to avoid loops, and metadata scans honor depth + extension filters.
+- Ambiguity resolution is simplified to day-month order only (`dd-mm-yyyy` / `mm-dd-yyyy`); century/two-digit-year options were removed.
+- Filename cleaning now removes redundant timestamps found via heuristics and drops duplicate long numeric IDs to reduce noise.
+- Revert scripts now pin the base directory, use safer quoting, and are surfaced after metadata-driven renames.
+
+### Fixed
+
+- Reduced false positives in detection by ignoring GUIDs, hashes, resolution/bitrate strings, and other long IDs.
+- Metadata copy mode preserves originals while copying with timestamps restored to the new files.
+
+### Testing
+
+- Added coverage for timezone/epoch parsing, redundant timestamp cleaning, robustness around symlinks and revert scripts, and depth/extension filters in metadata runs.
+
+## [1.3.0] - 2025-11-12
+
+### Summary
+
+Major performance release with metadata caching (500x faster priority changes), progressive batch processing for thousands of files, and intelligent redundant timestamp removal for cleaner filenames.
+
+---
+
+### Added
+
+#### 🧹 Intelligent Redundant Timestamp Removal
+- **Automatic detection** of redundant date/time patterns in filenames
+- **Smart removal** of timestamps that represent the same date as the extracted primary timestamp
+- **Examples**:
+  - `2020-11-22 19.49.56 - 2020.11.22.jpg` → `2020-11-22 19.49.56.jpg`
+  - `20240115_doc-2024.01.15.txt` → `2024-01-15 - doc.txt`
+  - `2024-11-02-14-30-25-iso-2024.11.02.txt` → `2024-11-02 14.30.25 - iso.txt`
+- **Format-agnostic**: Handles dots, dashes, underscores, compact formats (YYYYMMDD)
+- **Semantic preservation**: Keeps meaningful content while removing redundant dates
+- **Tests**: 23 comprehensive tests covering basic removal, multiple redundant timestamps, edge cases, and real-world patterns
 
 #### ⚡ Metadata Caching System
 - **Intelligent caching** with automatic invalidation (cache key: `filepath + size + mtime`)
@@ -437,16 +478,6 @@ This release focuses on performance optimization and intelligent timestamp detec
 ---
 
 ## Roadmap
-
-### High Priority
-- ✅ ~~Enhanced time-only detection (HH:MM:SS with various separators)~~ (Completed in v1.0.5)
-- ✅ ~~Batch processing API (10x performance for bulk operations)~~ (Completed in v1.0.5)
-- ✅ ~~Confidence scores for better debugging~~ (Completed in v1.0.5)
-
-### Medium Priority
-- ✅ ~~Context-aware ambiguity resolution~~ (Completed in v1.0.6)
-- ✅ ~~Custom pattern support (extensible API)~~ (Completed in v1.0.7)
-- ✅ ~~Unified metadata API~~ (Completed in v1.0.8)
 
 ### Low Priority
 - Time zone support

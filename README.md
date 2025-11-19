@@ -147,9 +147,6 @@ fixts ./files --resolution dd-mm-yyyy --execute
 
 # US format (MM-DD-YYYY)
 fixts ./files --resolution mm-dd-yyyy --execute
-
-# For 2-digit years
-fixts ./old-photos --resolution 2000s --execute
 ```
 
 ### Configuration files
@@ -161,10 +158,7 @@ Save your preferred settings in a `.fixtsrc` file:
 cat > .fixtsrc << EOF
 {
   "format": "yyyy-mm-dd hh.MM.ss",
-  "resolution": {
-    "dateFormat": "dd-mm-yyyy",
-    "century": "2000s"
-  },
+  "resolution": "dd-mm-yyyy",
   "excludeExt": ["tmp", "cache"],
   "verbose": false
 }
@@ -261,7 +255,7 @@ And many more! See [full format list](./DOCUMENTATION.md#supported-formats).
 | `--exclude-ext` | `-x` | Exclude these extensions (priority over include) |
 | `--exclude-dir` | `-X` | Exclude directories by name |
 | `--depth` | `-D` | Max recursion depth (default: 1 - root only) |
-| `--resolution` | | Resolve ambiguities (`dd-mm-yyyy`, `mm-dd-yyyy`, `2000s`, `1900s`) |
+| `--resolution` | | Resolve ambiguities (`dd-mm-yyyy`, `mm-dd-yyyy`) |
 | `--no-revert` | | Skip revert script generation (faster for large batches) |
 
 ---
@@ -1112,4 +1106,3 @@ npm run verify
 ## License
 
 GNU General Public License v3.0 or later - see [LICENSE](./LICENSE) file for details.
-
